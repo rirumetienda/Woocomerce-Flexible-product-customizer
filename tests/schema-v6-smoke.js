@@ -6,6 +6,7 @@ const validator = fs.readFileSync('flexible-product-customizer/includes/class-va
 const rest = fs.readFileSync('flexible-product-customizer/includes/class-rest-controller.php', 'utf8');
 const cart = fs.readFileSync('flexible-product-customizer/includes/class-cart-integration.php', 'utf8');
 const activator = fs.readFileSync('flexible-product-customizer/includes/class-activator.php', 'utf8');
+const plugin = fs.readFileSync('flexible-product-customizer/includes/class-plugin.php', 'utf8');
 const library = fs.readFileSync('flexible-product-customizer/includes/class-template-library.php', 'utf8');
 const libraryAssets = fs.readdirSync('flexible-product-customizer/assets/demo/library').filter((name) => name.endsWith('.png'));
 const frontend = fs.readFileSync('flexible-product-customizer/includes/class-frontend.php', 'utf8');
@@ -38,8 +39,10 @@ const requirements = [
 	[/fpcw-cart-preview-link/, cart, 'Cart previews are not linked to their full image.'],
 	[/schema_version[\s\S]{0,120}<\s*6/, activator, 'Stored templates do not have an automatic schema v6 migration.'],
 	[/install_sample_template/, activator, 'The bundled cylindrical starter template is not installed.'],
-	[/Template_Library::maybe_install/, activator, 'The bundled blank template library does not have an independent installer guard.'],
-	[/FPCW_VERSION !== \$installed[\s\S]{0,420}Template_Library::maybe_install/, activator, 'The template library installer must run even when the plugin DB version is already current.'],
+	[/update_option\( 'fpcw_pending_upgrade_from'/, activator, 'Template installation is not deferred during early upgrade checks.'],
+	[/complete_deferred_upgrade[\s\S]{0,700}Template_Library::maybe_install/, activator, 'The bundled blank template library does not install from the deferred init hook.'],
+	[/complete_deferred_upgrade/, plugin, 'The deferred template installer is not registered from the plugin boot sequence.'],
+	[/add_action\( 'init',[\s\S]{0,120}complete_deferred_upgrade[\s\S]{0,40}20 \)/, plugin, 'The deferred template installer must run after normal init post-type registration.'],
 	[/final class Template_Library/, library, 'The bundled blank template library class is missing.'],
 	[/const OPTION\s*=\s*'fpcw_template_library_version'/, library, 'The template library version option is missing.'],
 	[/function maybe_install/, library, 'The template library maybe_install guard is missing.'],

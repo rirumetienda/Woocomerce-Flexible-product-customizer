@@ -29,7 +29,9 @@ final class Template_Library {
 	/** @return bool */
 	public static function install() {
 		$templates = new Template_Manager();
-		$templates->register_post_type();
+		if ( ! post_type_exists( Template_Manager::POST_TYPE ) ) {
+			$templates->register_post_type();
+		}
 		$assets = self::install_assets();
 		$ok = false;
 		foreach ( self::definitions( $assets ) as $definition ) {

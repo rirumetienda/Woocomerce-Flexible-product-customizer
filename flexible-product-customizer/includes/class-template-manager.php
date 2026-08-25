@@ -34,6 +34,10 @@ final class Template_Manager {
 	 * @return void
 	 */
 	public function register_post_type() {
+		if ( post_type_exists( self::POST_TYPE ) ) {
+			return;
+		}
+
 		$capabilities = array_fill_keys(
 			array(
 				'edit_post', 'read_post', 'delete_post', 'edit_posts', 'edit_others_posts',

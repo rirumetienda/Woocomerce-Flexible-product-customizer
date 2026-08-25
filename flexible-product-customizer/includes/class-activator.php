@@ -25,8 +25,7 @@ final class Activator {
 			wp_schedule_event( time() + HOUR_IN_SECONDS, 'hourly', 'fpcw_cleanup_expired' );
 		}
 
-		self::install_sample_template();
-		Template_Library::maybe_install();
+		update_option( 'fpcw_pending_upgrade_from', '0', false );
 	}
 
 	/**
@@ -37,12 +36,27 @@ final class Activator {
 	public static function maybe_upgrade() {
 		$installed = (string) get_option( 'fpcw_db_version' );
 		if ( FPCW_VERSION !== $installed ) {
+			update_option( 'fpcw_pending_upgrade_from', $installed ? $installed : '0', false );
 			self::install_schema();
-			if ( ! $installed || version_compare( $installed, '1.5.0', '<' ) ) {
+		}
+	}
+
+	/**
+	 * Run template-related installation only after init, when rewrite is available.
+	 *
+	 * @return void
+	 */
+	public static function complete_deferred_upgrade() {
+		$from = get_option( 'fpcw_pending_upgrade_from', null );
+		if ( null !== $from ) {
+			$from = (string) $from;
+			if ( '0' === $from || version_compare( $from, '1.5.0', '<' ) ) {
 				self::migrate_templates();
 				self::install_sample_template();
 			}
+			delete_option( 'fpcw_pending_upgrade_from' );
 		}
+
 		Template_Library::maybe_install();
 	}
 

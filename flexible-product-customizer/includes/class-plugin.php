@@ -46,6 +46,7 @@ final class Plugin {
 		add_action( 'init', array( 'FPCW\\Session_Identity', 'ensure_cookie' ), 1 );
 
 		$templates->register_hooks();
+		add_action( 'init', array( 'FPCW\\Activator', 'complete_deferred_upgrade' ), 20 );
 		$products->register_hooks();
 		$settings->register_hooks();
 		$storage->register_hooks( $repository );
