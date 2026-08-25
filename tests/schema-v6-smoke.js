@@ -1,0 +1,54 @@
+const fs = require('fs');
+
+const template = fs.readFileSync('flexible-product-customizer/includes/class-template-manager.php', 'utf8');
+const product = fs.readFileSync('flexible-product-customizer/includes/class-product-settings.php', 'utf8');
+const validator = fs.readFileSync('flexible-product-customizer/includes/class-validator.php', 'utf8');
+const rest = fs.readFileSync('flexible-product-customizer/includes/class-rest-controller.php', 'utf8');
+const cart = fs.readFileSync('flexible-product-customizer/includes/class-cart-integration.php', 'utf8');
+const activator = fs.readFileSync('flexible-product-customizer/includes/class-activator.php', 'utf8');
+const frontend = fs.readFileSync('flexible-product-customizer/includes/class-frontend.php', 'utf8');
+const editor = fs.readFileSync('flexible-product-customizer/assets/js/editor.js', 'utf8');
+const projector = fs.readFileSync('flexible-product-customizer/assets/js/cylindrical-preview.js', 'utf8');
+const adminEditor = fs.readFileSync('flexible-product-customizer/assets/js/admin-template.js', 'utf8');
+const sampleAsset = 'flexible-product-customizer/assets/demo/sample-white-mug.png';
+const threeModule = 'flexible-product-customizer/assets/vendor/three-0.180.0/three.module.min.js';
+const threeCore = 'flexible-product-customizer/assets/vendor/three-0.180.0/three.core.min.js';
+const threeLicense = 'flexible-product-customizer/licenses/three-LICENSE.txt';
+
+const requirements = [
+	[/['"]schema_version['"]\s*=>\s*6/, template, 'Template schema v6 is missing.'],
+	[/['"]product_type['"]/, template, 'Flat and cylindrical template types are missing.'],
+	[/['"]print_area['"]/, template, 'Independent cylindrical print map dimensions are missing.'],
+	[/['"]frame['"]\s*=>\s*\$this->sanitize_box/, template, 'The mockup projection frame is not normalized centrally.'],
+	[/mask_image_url/, template, 'Projection mask URLs are not hydrated.'],
+	[/function sample_config/, template, 'The bundled starter template configuration is missing.'],
+	[/function sanitize_projection/, template, 'Cylindrical geometry is not normalized centrally.'],
+	[/preview_views/, template, 'Configurable cylindrical preview angles are missing from template normalization.'],
+	[/available_surface_ids/, template, 'Attribute-specific surface availability is not centralized.'],
+	[/['"]image_id['"]/, template, 'Attribute-specific surface images are missing.'],
+	[/function surface_extras/, product, 'Product surface extras are not exposed centrally.'],
+	[/\$config\[['"]required['"]\]\s*=\s*true/, product, 'Customizable products are not always required to have a saved design.'],
+	[/fpcw_surface_unavailable/, validator, 'Unavailable attribute surfaces are not rejected by validation.'],
+	[/fpcw_empty_design/, validator, 'Empty customizations are not rejected by validation.'],
+	[/['"]outline_width['"]/, validator, 'Outline thickness is not validated server-side.'],
+	[/required_surface_ids/, rest, 'REST render validation is not scoped to the selected attribute.'],
+	[/preview_render_key/, rest, 'REST preview validation is not scoped to surface and angle.'],
+	[/fpcw-cart-preview-link/, cart, 'Cart previews are not linked to their full image.'],
+	[/schema_version[\s\S]{0,120}<\s*6/, activator, 'Stored templates do not have an automatic schema v6 migration.'],
+	[/install_sample_template/, activator, 'The bundled cylindrical starter template is not installed.'],
+	[/wp_enqueue_script_module/, frontend, 'The local cylindrical renderer module is not enqueued.'],
+	[/function buildProjectionTexture/, editor, 'The editor does not centralize its flat production texture for projection.'],
+	[/function drawMockupScene/, editor, 'The live product mockup is not rendered independently from the print map.'],
+	[/duplicate-surface/, adminEditor, 'Surface duplication is missing from the template builder.'],
+	[/new THREE\.CylinderGeometry/, projector, 'The cylindrical preview does not use Three.js cylinder geometry.'],
+	[/new THREE\.CanvasTexture/, projector, 'The flat design canvas is not reused as the cylinder texture.'],
+	[/compositeLayers/, projector, 'Projection masks and lighting overlays are not composited.'],
+];
+
+for (const [pattern, source, message] of requirements) {
+	if (!pattern.test(source)) throw new Error(message);
+}
+if (![threeModule, threeCore, threeLicense, sampleAsset].every((file) => fs.existsSync(file) && fs.statSync(file).size > 0)) {
+	throw new Error('The local Three.js runtime, license, or sample mockup is incomplete.');
+}
+process.stdout.write('Schema v6 cylindrical integration smoke test passed.\n');

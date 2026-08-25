@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Cylindrical preview fixture</title>
+	<style>
+		* { box-sizing: border-box; }
+		body { margin: 0; padding: 16px; color: #20242a; background: #eef1f3; font: 14px/1.4 system-ui, sans-serif; }
+		main { width: min(100%, 720px); margin: auto; }
+		.controls { display: grid; grid-template-columns: repeat(2, 1fr); margin-bottom: 10px; border: 1px solid #aeb4bb; }
+		.controls button { min-width: 0; min-height: 38px; overflow: hidden; border: 0; background: #fff; text-overflow: ellipsis; white-space: nowrap; }
+		.controls button.active { color: #fff; background: #2d5f88; }
+		.stage { position: relative; width: 100%; aspect-ratio: 1; overflow: hidden; background: #fff; border: 1px solid #8b939b; }
+		.stage canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+		#projection { touch-action: none; }
+		output { display: block; margin-top: 10px; font-variant-numeric: tabular-nums; }
+		body.mobile main { width: 358px; margin: 0; }
+	</style>
+</head>
+<body>
+	<main>
+		<div class="controls"><button class="active">Edit</button><button>Wrapped preview</button></div>
+		<div class="stage"><canvas id="base" width="900" height="900"></canvas><canvas id="projection"></canvas></div>
+		<output id="status">Loading</output>
+	</main>
+	<script>
+		window.addEventListener('error', (event) => { document.getElementById('status').value = `Error: ${event.message}`; });
+		window.addEventListener('unhandledrejection', (event) => { document.getElementById('status').value = `Rejected: ${event.reason && event.reason.message ? event.reason.message : event.reason}`; });
+	</script>
+	<script type="module">
+		if (new URLSearchParams(window.location.search).get('layout') === 'mobile') document.body.classList.add('mobile');
+		try {
+			await import('../../flexible-product-customizer/assets/js/cylindrical-preview.js');
+		} catch (error) {
+			document.getElementById('status').value = `Import error: ${error.message}`;
+			throw error;
+		}
+
+		const base = document.getElementById('base');
+		const baseContext = base.getContext('2d');
+		baseContext.fillStyle = '#f6f7f8';
+		baseContext.fillRect(0, 0, 900, 900);
+		baseContext.fillStyle = '#d9e0e5';
+		baseContext.beginPath();
+		baseContext.ellipse(450, 720, 250, 45, 0, 0, Math.PI * 2);
+		baseContext.fill();
+		const bodyGradient = baseContext.createLinearGradient(170, 0, 730, 0);
+		bodyGradient.addColorStop(0, '#858f98');
+		bodyGradient.addColorStop(0.18, '#f4f7f8');
+		bodyGradient.addColorStop(0.5, '#ffffff');
+		bodyGradient.addColorStop(0.82, '#e6ecef');
+		bodyGradient.addColorStop(1, '#7d8790');
+		baseContext.fillStyle = bodyGradient;
+		baseContext.fillRect(170, 150, 560, 570);
+		baseContext.fillStyle = '#c7d0d6';
+		baseContext.beginPath();
+		baseContext.ellipse(450, 150, 280, 58, 0, 0, Math.PI * 2);
+		baseContext.fill();
+		baseContext.strokeStyle = '#9ba5ad';
+		baseContext.lineWidth = 42;
+		baseContext.beginPath();
+		baseContext.ellipse(745, 410, 105, 150, 0, -Math.PI / 2, Math.PI / 2);
+		baseContext.stroke();
+
+		const design = document.createElement('canvas');
+		design.width = 1200;
+		design.height = 800;
+		const context = design.getContext('2d');
+		context.clearRect(0, 0, design.width, design.height);
+		context.fillStyle = '#e3363e';
+		context.fillRect(0, 0, 400, 800);
+		context.fillStyle = '#ffd447';
+		context.fillRect(400, 0, 400, 800);
+		context.fillStyle = '#1677b8';
+		context.fillRect(800, 0, 400, 800);
+		context.fillStyle = '#ffffff';
+		context.font = '700 150px sans-serif';
+		context.textAlign = 'center';
+		context.textBaseline = 'middle';
+		context.fillText('WRAP', 600, 400);
+
+		const surface = {
+			id: 'wrap', width: 900, height: 900,
+			workspace: { x: 205, y: 235, width: 490, height: 410 },
+			print_area: { width: 1200, height: 800 },
+			projection: { wrap_angle: 270, top_scale: 92, bottom_scale: 108, shading: 58, frame: { x: 205, y: 235, width: 490, height: 410 } },
+		};
+		const projection = document.getElementById('projection');
+		const preview = new window.FPCWCylindricalPreview(projection);
+		let rotation = Number(new URLSearchParams(window.location.search).get('rotation') || 0);
+
+		function pixelStats() {
+			const pixels = projection.getContext('2d').getImageData(0, 0, projection.width, projection.height).data;
+			let visible = 0;
+			let checksum = 0;
+			for (let index = 3; index < pixels.length; index += 4) {
+				if (pixels[index]) visible += 1;
+				checksum = (checksum + pixels[index - 3] * 3 + pixels[index - 2] * 5 + pixels[index - 1] * 7 + pixels[index]) % 2147483647;
+			}
+			return { visible, checksum, width: projection.width, height: projection.height };
+		}
+
+		function render() {
+			preview.render(design, surface, rotation, 1200);
+			const stats = pixelStats();
+			document.getElementById('status').value = `${stats.width}x${stats.height}; ${stats.visible} visible pixels; checksum ${stats.checksum}; rotation ${rotation}`;
+			window.cylinderFixture = { preview, surface, design, stats, rotate(value) { rotation = value; render(); return pixelStats(); } };
+		}
+		render();
+	</script>
+</body>
+</html>

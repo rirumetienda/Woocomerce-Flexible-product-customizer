@@ -1,0 +1,6 @@
+.fpcw-cart-preview { display: block; width: 100%; max-width: 90px; height: auto; margin-top: 6px; object-fit: contain; border: 1px solid #d9dde1; background: #fff; }
+.fpcw-cart-preview-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.fpcw-cart-preview-link { display: block; cursor: zoom-in; }
+.fpcw-cart-preview-link .fpcw-cart-preview { margin-top: 0; }
+.fpcw-expiry { color: #9b2c2c; }
+.fpcw-order-customization a { text-decoration: underline; }

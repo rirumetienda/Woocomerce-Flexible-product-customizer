@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Cylindrical editor fixture</title>
+	<link rel="stylesheet" href="../../flexible-product-customizer/assets/css/editor.css">
+	<style>
+		* { box-sizing: border-box; }
+		body { margin: 0; color: #20242a; background: #edf0f2; font-family: system-ui, sans-serif; }
+		.fixture { width: min(100%, 1180px); min-height: 100vh; margin: auto; padding: 16px; background: #f5f6f7; }
+		.fixture > header { margin-bottom: 12px; }
+		.fixture > header h1 { margin: 0; font-size: 20px; letter-spacing: 0; }
+		.fixture > header p { margin: 3px 0 0; color: #5d646d; font-size: 12px; }
+		.fixture .fpcw-stage-wrap { padding: 0; overflow: visible; }
+		.fixture .fpcw-tabs button { pointer-events: none; }
+		.fixture output { display: block; max-width: 100%; margin-top: 10px; overflow-wrap: anywhere; color: #39414a; font-size: 12px; font-variant-numeric: tabular-nums; }
+		@media (min-width: 821px) {
+			.fixture { padding: 22px; }
+		}
+	</style>
+</head>
+<body>
+	<main class="fixture">
+		<header><h1>Cylindrical mug template</h1><p>Independent print map and live product projection</p></header>
+		<div class="fpcw-stage-wrap">
+			<div class="fpcw-tabs"><button class="is-active">Full wrap</button></div>
+			<div class="fpcw-view-modes" role="group">
+				<button type="button" id="show-edit" aria-pressed="true">Print design</button>
+				<button type="button" id="show-product" aria-pressed="false">Product preview</button>
+			</div>
+			<div id="stages" class="fpcw-stage-canvases is-cylindrical" data-view="edit">
+				<section class="fpcw-stage-panel fpcw-stage-panel--edit">
+					<h3>Print design</h3>
+					<div class="fpcw-canvas-shell" style="aspect-ratio:2400/900"><canvas id="fpcw-canvas" width="2400" height="900"></canvas></div>
+				</section>
+				<section class="fpcw-stage-panel fpcw-stage-panel--projection">
+					<h3>Product preview</h3>
+					<div class="fpcw-canvas-shell fpcw-projection-shell" style="aspect-ratio:1"><canvas id="mockup" width="1200" height="1200"></canvas><canvas id="projection" class="fpcw-projection-canvas"></canvas></div>
+				</section>
+			</div>
+			<output id="status">Loading renderer</output>
+		</div>
+	</main>
+	<script type="module">
+		await import('../../flexible-product-customizer/assets/js/cylindrical-preview.js');
+		const stages = document.getElementById('stages');
+		const editButton = document.getElementById('show-edit');
+		const productButton = document.getElementById('show-product');
+		function setView(view) {
+			stages.dataset.view = view;
+			editButton.setAttribute('aria-pressed', String(view === 'edit'));
+			productButton.setAttribute('aria-pressed', String(view === 'wrapped'));
+		}
+		editButton.addEventListener('click', () => setView('edit'));
+		productButton.addEventListener('click', () => setView('wrapped'));
+		if (new URLSearchParams(location.search).get('view') === 'wrapped') setView('wrapped');
+
+		const printMap = document.getElementById('fpcw-canvas');
+		const mapContext = printMap.getContext('2d');
+		mapContext.fillStyle = '#f8f9fa';
+		mapContext.fillRect(0, 0, printMap.width, printMap.height);
+		mapContext.fillStyle = '#1976a8';
+		mapContext.fillRect(0, 0, 800, 900);
+		mapContext.fillStyle = '#e54a3b';
+		mapContext.fillRect(800, 0, 800, 900);
+		mapContext.fillStyle = '#f2c84b';
+		mapContext.fillRect(1600, 0, 800, 900);
+		mapContext.fillStyle = '#fff';
+		mapContext.font = '700 210px system-ui';
+		mapContext.textAlign = 'center';
+		mapContext.textBaseline = 'middle';
+		mapContext.fillText('DEMO', 1200, 450);
+		mapContext.strokeStyle = 'rgba(255,255,255,.75)';
+		mapContext.lineWidth = 7;
+		for (let tick = 0; tick <= 4; tick++) {
+			const x = printMap.width * tick / 4;
+			mapContext.beginPath();
+			mapContext.moveTo(x, 0);
+			mapContext.lineTo(x, printMap.height);
+			mapContext.stroke();
+		}
+
+		const mug = new Image();
+		mug.src = '../../flexible-product-customizer/assets/demo/sample-white-mug.png';
+		await mug.decode();
+		const mockup = document.getElementById('mockup');
+		const mockupContext = mockup.getContext('2d');
+		mockupContext.fillStyle = '#f0f2f4';
+		mockupContext.fillRect(0, 0, 1200, 1200);
+		mockupContext.drawImage(mug, 0, 0, 1200, 1200);
+
+		const projection = document.getElementById('projection');
+		const preview = new window.FPCWCylindricalPreview(projection);
+		const surface = {
+			id: 'wrap', width: 1200, height: 1200,
+			workspace: { x: 210, y: 280, width: 610, height: 680 },
+			print_area: { width: 2400, height: 900 },
+			projection: { wrap_angle: 180, top_scale: 100, bottom_scale: 102, shading: 55, frame: { x: 210, y: 280, width: 610, height: 680 } },
+		};
+		preview.render(printMap, surface, 0, 1200, { maskImage: mug, baseTransform: { x: 0, y: 0, width: 1200, height: 1200 } });
+		const pixels = projection.getContext('2d').getImageData(0, 0, projection.width, projection.height).data;
+		let visible = 0;
+		let checksum = 0;
+		for (let index = 3; index < pixels.length; index += 4) {
+			if (pixels[index]) visible++;
+			checksum = (checksum + pixels[index - 3] * 3 + pixels[index - 2] * 5 + pixels[index - 1] * 7 + pixels[index]) % 2147483647;
+		}
+		document.getElementById('status').value = `${projection.width}x${projection.height}; ${visible} visible pixels; checksum ${checksum}`;
+		document.documentElement.dataset.visiblePixels = String(visible);
+		document.documentElement.dataset.pixelChecksum = String(checksum);
+		window.fixtureReady = { visible, checksum, width: projection.width, height: projection.height };
+	</script>
+</body>
+</html>
