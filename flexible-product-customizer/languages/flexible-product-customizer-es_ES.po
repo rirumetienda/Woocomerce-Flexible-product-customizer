@@ -1,5 +1,5 @@
 msgid ""
-msgstr "Project-Id-Version: Flexible Product Customizer 1.5.1\\nLanguage: es_ES\\nMIME-Version: 1.0\\nContent-Type: text/plain; charset=UTF-8\\nContent-Transfer-Encoding: 8bit\\nPlural-Forms: nplurals=2; plural=(n != 1);\\n"
+msgstr "Project-Id-Version: Flexible Product Customizer 1.6.0\\nLanguage: es_ES\\nMIME-Version: 1.0\\nContent-Type: text/plain; charset=UTF-8\\nContent-Transfer-Encoding: 8bit\\nPlural-Forms: nplurals=2; plural=(n != 1);\\n"
 
 msgid "+ %1$s extra - %2$s"
 msgstr "+ %1$s extra - %2$s"
@@ -123,6 +123,9 @@ msgstr "Elige si el producto es plano o cilíndrico antes de guardar la plantill
 
 msgid "Choose which template color attributes can be purchased with this product."
 msgstr "Elige qué atributos de color de la plantilla se pueden comprar con este producto."
+
+msgid "Circle"
+msgstr "Circulo"
 
 msgid "Clear"
 msgstr "Limpiar"
@@ -409,6 +412,9 @@ msgstr "Posición del marco de proyección"
 msgid "Projection mask"
 msgstr "Máscara de proyección"
 
+msgid "Rectangle"
+msgstr "Rectangulo"
+
 msgid "Remove"
 msgstr "Eliminar"
 
@@ -492,6 +498,9 @@ msgstr "Archivos originales"
 
 msgid "Surface images for this attribute"
 msgstr "Imágenes de superficie para este atributo"
+
+msgid "Surface shape"
+msgstr "Forma de superficie"
 
 msgid "Surfaces"
 msgstr "Superficies"

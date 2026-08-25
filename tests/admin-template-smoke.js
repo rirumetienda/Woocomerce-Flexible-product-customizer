@@ -29,7 +29,7 @@ window.FPCW_ADMIN = {
 		productType: 'Product type', flatProduct: 'Flat', cylindricalProduct: 'Cylindrical', chooseProductType: 'Choose a type',
 		textOptions: 'Text options', fonts: 'Fonts', productColors: 'Colors', addColor: 'Add color', surfaces: 'Surfaces',
 		addSurface: 'Add surface', name: 'Name', id: 'ID', swatch: 'Swatch', variationValue: 'Variation', remove: 'Remove',
-		removeSurface: 'Remove surface', duplicateSurface: 'Duplicate', copySuffix: 'copy', canvasWidth: 'Width', canvasHeight: 'Height', mockupWidth: 'Mockup width', mockupHeight: 'Mockup height', baseImages: 'Images',
+		removeSurface: 'Remove surface', duplicateSurface: 'Duplicate', copySuffix: 'copy', canvasWidth: 'Width', canvasHeight: 'Height', surfaceShape: 'Shape', rectangle: 'Rectangle', circle: 'Circle', mockupWidth: 'Mockup width', mockupHeight: 'Mockup height', baseImages: 'Images',
 		workArea: 'Area', width: 'Width', height: 'Height', elementLimits: 'Limits', images: 'Images',
 		maximumImages: 'Max images', text: 'Text', maximumTexts: 'Max texts', noImageShort: 'No image', choose: 'Choose', clear: 'Clear',
 		newColor: 'New color', newSurface: 'New surface', canvas: 'Canvas', baseImagePosition: 'Base position', positionX: 'X', positionY: 'Y',
@@ -52,6 +52,12 @@ window.fetch = async (url, options) => {
 window.eval(fs.readFileSync('flexible-product-customizer/assets/js/admin-template.js', 'utf8'));
 
 if (!window.document.querySelector('.fpcw-template-configuration').hidden) throw new Error('A new template must require choosing its product type first.');
+window.document.querySelector('[data-product-type="flat"]').click();
+const shape = window.document.querySelector('[data-path="surfaces.0.shape"]');
+if (!shape) throw new Error('Flat template shape selector was not shown.');
+shape.value = 'circle';
+shape.dispatchEvent(new window.Event('change', { bubbles: true }));
+if (!window.document.querySelector('[data-edit-box="workspace"]').classList.contains('is-circle')) throw new Error('Circular flat surface preview was not shown.');
 window.document.querySelector('[data-product-type="cylindrical"]').click();
 const wrapAngle = window.document.querySelector('[data-path="surfaces.0.projection.wrap_angle"]');
 if (!wrapAngle) throw new Error('Cylindrical projection controls were not shown after selecting the product type.');

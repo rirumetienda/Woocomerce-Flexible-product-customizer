@@ -72,6 +72,7 @@
 .fpcw-edit-box > span { position: absolute; top: 4px; left: 5px; max-width: calc(100% - 10px); overflow: hidden; padding: 2px 5px; color: #fff; background: rgb(29 35 39 / 82%); font-size: 10px; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
 .fpcw-edit-box--base { border: 2px solid #2271b1; background: rgb(34 113 177 / 7%); }
 .fpcw-edit-box--workspace { border: 2px dashed #d63638; background: rgb(214 54 56 / 12%); }
+.fpcw-edit-box.is-circle { border-radius: 50%; }
 .fpcw-edit-box.is-active { z-index: 5; pointer-events: auto; cursor: move; box-shadow: 0 0 0 2px rgb(255 255 255 / 80%); }
 .fpcw-edit-box i { position: absolute; display: none; width: 11px; height: 11px; background: #fff; border: 2px solid currentColor; border-radius: 50%; }
 .fpcw-edit-box.is-active i { display: block; }

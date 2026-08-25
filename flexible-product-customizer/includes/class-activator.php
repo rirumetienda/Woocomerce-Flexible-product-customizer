@@ -26,6 +26,7 @@ final class Activator {
 		}
 
 		self::install_sample_template();
+		Template_Library::install();
 	}
 
 	/**
@@ -40,6 +41,9 @@ final class Activator {
 			if ( ! $installed || version_compare( $installed, '1.5.0', '<' ) ) {
 				self::migrate_templates();
 				self::install_sample_template();
+			}
+			if ( ! $installed || version_compare( $installed, '1.6.0', '<' ) ) {
+				Template_Library::install();
 			}
 		}
 	}

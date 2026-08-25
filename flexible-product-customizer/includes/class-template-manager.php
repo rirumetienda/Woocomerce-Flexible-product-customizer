@@ -195,7 +195,8 @@ final class Template_Manager {
 					'mockupHeight' => __( 'Mockup height (px)', 'flexible-product-customizer' ), 'baseImages' => __( 'Surface images for this attribute', 'flexible-product-customizer' ),
 					'enableSurface' => __( 'Available for this attribute', 'flexible-product-customizer' ),
 					'workArea' => __( 'Customer editing area', 'flexible-product-customizer' ), 'width' => __( 'Width', 'flexible-product-customizer' ),
-					'height' => __( 'Height', 'flexible-product-customizer' ), 'elementLimits' => __( 'Element limits', 'flexible-product-customizer' ),
+					'height' => __( 'Height', 'flexible-product-customizer' ), 'surfaceShape' => __( 'Surface shape', 'flexible-product-customizer' ),
+					'rectangle' => __( 'Rectangle', 'flexible-product-customizer' ), 'circle' => __( 'Circle', 'flexible-product-customizer' ), 'elementLimits' => __( 'Element limits', 'flexible-product-customizer' ),
 					'images' => __( 'Images', 'flexible-product-customizer' ), 'maximumImages' => __( 'Maximum images', 'flexible-product-customizer' ),
 					'text' => __( 'Text', 'flexible-product-customizer' ), 'maximumTexts' => __( 'Maximum texts', 'flexible-product-customizer' ),
 					'noImageShort' => __( 'No image', 'flexible-product-customizer' ), 'choose' => __( 'Choose', 'flexible-product-customizer' ),
@@ -288,6 +289,13 @@ final class Template_Manager {
 	public function normalize_snapshot( array $snapshot ) {
 		$schema_version = isset( $snapshot['schema_version'] ) ? (int) $snapshot['schema_version'] : 1;
 		if ( $schema_version >= 6 ) {
+			if ( ! isset( $snapshot['surfaces'] ) || ! is_array( $snapshot['surfaces'] ) ) {
+				$snapshot['surfaces'] = array();
+			}
+			foreach ( $snapshot['surfaces'] as &$surface ) {
+				$surface['shape'] = isset( $surface['shape'] ) && 'circle' === $surface['shape'] ? 'circle' : 'rect';
+			}
+			unset( $surface );
 			return $snapshot;
 		}
 		$surfaces = isset( $snapshot['surfaces'] ) && is_array( $snapshot['surfaces'] ) ? $snapshot['surfaces'] : array();
@@ -328,6 +336,7 @@ final class Template_Manager {
 		foreach ( $snapshot['surfaces'] as &$surface ) {
 			$width       = max( 100, absint( isset( $surface['width'] ) ? $surface['width'] : 1000 ) );
 			$height      = max( 100, absint( isset( $surface['height'] ) ? $surface['height'] : 1000 ) );
+			$surface['shape'] = isset( $surface['shape'] ) && 'circle' === $surface['shape'] ? 'circle' : 'rect';
 			$workspace   = isset( $surface['workspace'] ) && is_array( $surface['workspace'] ) ? $surface['workspace'] : array( 'x' => 0, 'y' => 0, 'width' => $width, 'height' => $height );
 			$projection  = isset( $surface['projection'] ) && is_array( $surface['projection'] ) ? $surface['projection'] : array();
 			$mask_url    = isset( $projection['mask_image_url'] ) ? $projection['mask_image_url'] : '';
@@ -519,12 +528,17 @@ final class Template_Manager {
 				)
 			);
 			$projection_defaults = $schema_version < 6 ? $workspace : array( 'x' => $canvas_width * 0.25, 'y' => $canvas_height * 0.2, 'width' => $canvas_width * 0.5, 'height' => $canvas_height * 0.6 );
+			$shape = isset( $surface['shape'] ) && 'circle' === sanitize_key( $surface['shape'] ) ? 'circle' : 'rect';
+			if ( 'cylindrical' === $product_type ) {
+				$shape = 'rect';
+			}
 
 			$surfaces[] = array(
 				'id'             => $id,
 				'label'          => sanitize_text_field( isset( $surface['label'] ) ? $surface['label'] : $id ),
 				'width'          => $canvas_width,
 				'height'         => $canvas_height,
+				'shape'          => $shape,
 				'workspace'      => $workspace,
 				'print_area'     => $print_area,
 				'base_image_transform' => $base_transform,
@@ -539,7 +553,7 @@ final class Template_Manager {
 		if ( ! $surfaces ) {
 			$surfaces = array(
 				array(
-					'id' => 'front', 'label' => __( 'Front', 'flexible-product-customizer' ), 'width' => 1000, 'height' => 1000,
+					'id' => 'front', 'label' => __( 'Front', 'flexible-product-customizer' ), 'width' => 1000, 'height' => 1000, 'shape' => 'rect',
 					'workspace' => array( 'x' => 250, 'y' => 200, 'width' => 500, 'height' => 600 ),
 					'print_area' => array( 'width' => 1000, 'height' => 1000 ),
 					'base_image_transform' => array( 'x' => 0, 'y' => 0, 'width' => 1000, 'height' => 1000 ),
@@ -599,7 +613,7 @@ final class Template_Manager {
 				),
 				'surfaces'       => array(
 					array(
-						'id' => 'wrap', 'label' => __( 'Full wrap', 'flexible-product-customizer' ), 'width' => 1200, 'height' => 1200,
+						'id' => 'wrap', 'label' => __( 'Full wrap', 'flexible-product-customizer' ), 'width' => 1200, 'height' => 1200, 'shape' => 'rect',
 						'workspace' => array( 'x' => 210, 'y' => 280, 'width' => 610, 'height' => 680 ),
 						'print_area' => array( 'width' => 2400, 'height' => 900 ),
 						'base_image_transform' => array( 'x' => 0, 'y' => 0, 'width' => 1200, 'height' => 1200 ),
@@ -631,7 +645,7 @@ final class Template_Manager {
 			),
 			'surfaces'       => array(
 				array(
-					'id' => 'front', 'label' => __( 'Front', 'flexible-product-customizer' ), 'width' => 1000, 'height' => 1000,
+					'id' => 'front', 'label' => __( 'Front', 'flexible-product-customizer' ), 'width' => 1000, 'height' => 1000, 'shape' => 'rect',
 					'workspace' => array( 'x' => 250, 'y' => 200, 'width' => 500, 'height' => 600 ),
 					'print_area' => array( 'width' => 1000, 'height' => 1000 ),
 					'base_image_transform' => array( 'x' => 0, 'y' => 0, 'width' => 1000, 'height' => 1000 ),

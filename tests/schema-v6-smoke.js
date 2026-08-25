@@ -6,6 +6,8 @@ const validator = fs.readFileSync('flexible-product-customizer/includes/class-va
 const rest = fs.readFileSync('flexible-product-customizer/includes/class-rest-controller.php', 'utf8');
 const cart = fs.readFileSync('flexible-product-customizer/includes/class-cart-integration.php', 'utf8');
 const activator = fs.readFileSync('flexible-product-customizer/includes/class-activator.php', 'utf8');
+const library = fs.readFileSync('flexible-product-customizer/includes/class-template-library.php', 'utf8');
+const libraryAssets = fs.readdirSync('flexible-product-customizer/assets/demo/library').filter((name) => name.endsWith('.png'));
 const frontend = fs.readFileSync('flexible-product-customizer/includes/class-frontend.php', 'utf8');
 const editor = fs.readFileSync('flexible-product-customizer/assets/js/editor.js', 'utf8');
 const projector = fs.readFileSync('flexible-product-customizer/assets/js/cylindrical-preview.js', 'utf8');
@@ -36,10 +38,17 @@ const requirements = [
 	[/fpcw-cart-preview-link/, cart, 'Cart previews are not linked to their full image.'],
 	[/schema_version[\s\S]{0,120}<\s*6/, activator, 'Stored templates do not have an automatic schema v6 migration.'],
 	[/install_sample_template/, activator, 'The bundled cylindrical starter template is not installed.'],
+	[/Template_Library::install/, activator, 'The bundled blank template library is not installed on activation or upgrade.'],
+	[/final class Template_Library/, library, 'The bundled blank template library class is missing.'],
+	[/blank-round-mousepad-v1/, library, 'The round mousepad bundled template is missing.'],
+	[/Superficie redonda[\s\S]{0,260}'circle'/, library, 'Circular bundled surfaces are missing.'],
 	[/wp_enqueue_script_module/, frontend, 'The local cylindrical renderer module is not enqueued.'],
 	[/function buildProjectionTexture/, editor, 'The editor does not centralize its flat production texture for projection.'],
 	[/function drawMockupScene/, editor, 'The live product mockup is not rendered independently from the print map.'],
+	[/function workspacePath/, editor, 'Surface clipping paths are not centralized.'],
+	[/function clipWorkArea/, editor, 'Customer objects are not clipped through the surface shape.'],
 	[/duplicate-surface/, adminEditor, 'Surface duplication is missing from the template builder.'],
+	[/surfaceShape/, adminEditor, 'The template builder does not expose surface shape controls.'],
 	[/new THREE\.CylinderGeometry/, projector, 'The cylindrical preview does not use Three.js cylinder geometry.'],
 	[/new THREE\.CanvasTexture/, projector, 'The flat design canvas is not reused as the cylinder texture.'],
 	[/compositeLayers/, projector, 'Projection masks and lighting overlays are not composited.'],
@@ -50,5 +59,8 @@ for (const [pattern, source, message] of requirements) {
 }
 if (![threeModule, threeCore, threeLicense, sampleAsset].every((file) => fs.existsSync(file) && fs.statSync(file).size > 0)) {
 	throw new Error('The local Three.js runtime, license, or sample mockup is incomplete.');
+}
+if (libraryAssets.length < 120) {
+	throw new Error('The bundled blank mockup library is incomplete.');
 }
 process.stdout.write('Schema v6 cylindrical integration smoke test passed.\n');

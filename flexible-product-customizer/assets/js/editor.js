@@ -64,6 +64,7 @@
 		}
 		normalized.product_type = normalized.product_type === 'cylindrical' ? 'cylindrical' : 'flat';
 		(normalized.surfaces || []).forEach((item) => {
+			item.shape = normalized.product_type === 'flat' && item.shape === 'circle' ? 'circle' : 'rect';
 			const workspace = item.workspace || { x: 0, y: 0, width: item.width || 1000, height: item.height || 1000 };
 			const projection = item.projection && typeof item.projection === 'object' ? item.projection : {};
 			const frame = projection.frame && typeof projection.frame === 'object' ? projection.frame : workspace;
@@ -964,12 +965,25 @@
 		ctx.restore();
 	}
 
-	function drawObjects(ctx, item) {
-		const area = workArea(item);
-		ctx.save();
-		ctx.beginPath();
+	function workspacePath(ctx, item, area) {
+		if (!isCylindrical() && item.shape === 'circle') {
+			const radius = Math.min(area.width, area.height) / 2;
+			ctx.ellipse(area.x + area.width / 2, area.y + area.height / 2, radius, radius, 0, 0, Math.PI * 2);
+			return;
+		}
 		ctx.rect(area.x, area.y, area.width, area.height);
+	}
+
+	function clipWorkArea(ctx, item) {
+		const area = workArea(item);
+		ctx.beginPath();
+		workspacePath(ctx, item, area);
 		ctx.clip();
+	}
+
+	function drawObjects(ctx, item) {
+		ctx.save();
+		clipWorkArea(ctx, item);
 		surfaceDesign(item.id).objects.forEach((object) => drawObject(ctx, object));
 		ctx.restore();
 	}
@@ -1034,7 +1048,9 @@
 		ctx.strokeStyle = '#1473e6';
 		ctx.lineWidth = Math.max(2, dimensions.width / 500);
 		ctx.setLineDash([dimensions.width / 100, dimensions.width / 140]);
-		ctx.strokeRect(area.x, area.y, area.width, area.height);
+		ctx.beginPath();
+		workspacePath(ctx, item, area);
+		ctx.stroke();
 		ctx.restore();
 	}
 

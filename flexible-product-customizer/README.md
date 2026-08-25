@@ -64,3 +64,8 @@ El contrato de FluxBuilder/WebView, los eventos JavaScript y las rutas REST est�
 - Expone vista previa y datos en Store API para Cart/Checkout Blocks y clientes móviles. El filtro de imagen de los bloques requiere WooCommerce 9.6 o posterior.
 - No guarda imágenes en base64 ni duplica el documento de diseño durante el flujo temporal.
 - Three.js se distribuye localmente bajo su licencia MIT; el plugin no carga motores gráficos desde CDN.
+
+
+## Biblioteca incluida
+
+La version 1.6.0 instala una biblioteca de plantillas blank con mockups PNG ligeros para prendas, tazas, posters, banners, termo, mousepads, broches, rompecabezas, cuadernos, lanyards y reloj redondo. Las superficies circulares usan `shape: circle` y recortan el diseno final dentro del limite redondo.

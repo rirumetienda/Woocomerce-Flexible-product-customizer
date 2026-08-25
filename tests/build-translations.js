@@ -47,6 +47,9 @@ const es = {
 	'Close editor': 'Cerrar editor',
 	'Color': 'Color',
 	'Color attributes': 'Atributos de color',
+	'Circle': 'Circulo',
+	'Rectangle': 'Rectangulo',
+	'Surface shape': 'Forma de superficie',
 	'Colors': 'Colores',
 	'Controls all plugin interfaces and customer-facing messages.': 'Controla todas las interfaces del plugin y los mensajes que ve el cliente.',
 	'Center': 'Centrar',
@@ -271,7 +274,7 @@ function poEscape(value) {
 
 function buildPo(messages) {
 	const header = [
-		'Project-Id-Version: Flexible Product Customizer 1.5.1',
+		'Project-Id-Version: Flexible Product Customizer 1.6.0',
 		'Language: es_ES',
 		'MIME-Version: 1.0',
 		'Content-Type: text/plain; charset=UTF-8',
@@ -285,7 +288,7 @@ function buildPo(messages) {
 
 function buildMo(messages) {
 	const header = [
-		'Project-Id-Version: Flexible Product Customizer 1.5.1',
+		'Project-Id-Version: Flexible Product Customizer 1.6.0',
 		'Language: es_ES',
 		'MIME-Version: 1.0',
 		'Content-Type: text/plain; charset=UTF-8',

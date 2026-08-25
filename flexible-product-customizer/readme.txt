@@ -4,7 +4,7 @@ Tags: woocommerce, product customizer, personalization, print, webview
 Requires at least: 6.5
 Requires PHP: 7.4
 WC requires at least: 9.6
-Stable tag: 1.5.1
+Stable tag: 1.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,7 +14,7 @@ Visual product customization with reusable templates, secure uploads, cart previ
 
 Flexible Product Customizer adds a visual editor to selected WooCommerce products. Administrators create reusable templates with color attributes, attribute-specific surface images, bounded work areas, fonts, and element limits. Each product can expose a subset of template attributes and surfaces, with a price increment charged only when a surface is used.
 
-Customers can upload PNG, JPEG, or WebP images, add styled text, move and scale elements, rotate in 90-degree steps, and preview every surface. Cylindrical templates add a live wrapped preview while preserving a flat production file. Saved designs appear in the cart and order. Store managers can download original uploads and transparent production PNG files from the order.
+Customers can upload PNG, JPEG, or WebP images, add styled text, move and scale elements, rotate in 90-degree steps, and preview every surface. Cylindrical templates add a live wrapped preview while preserving a flat production file. Circular surfaces clip designs to round bounds for products like buttons, clocks, and round mousepads. Saved designs appear in the cart and order. Store managers can download original uploads and transparent production PNG files from the order.
 
 Temporary customizations expire exactly seven days after creation. An hourly cleanup removes expired files and data. Completed orders are permanent and never enter that cleanup flow.
 
@@ -44,6 +44,11 @@ Unordered session files and data are deleted automatically. A stale cart line is
 No. Creating an order permanently claims the customization and disables its expiration.
 
 == Changelog ==
+
+= 1.6.0 =
+* Adds a bundled blank-template library for shirts, hoodies, sweatshirts, caps, mugs, posters, banners, tumblers, notebooks, lanyards, clocks, mousepads, buttons, and puzzles.
+* Adds circular editable surface support with customer-side clipping and admin preview controls.
+* Installs 121 lightweight bundled PNG mockups as reusable template assets.
 
 = 1.5.1 =
 * Adds configurable cylindrical preview angles for front, left, and right product views.

@@ -101,6 +101,7 @@
 	function normalizeSurface(surface) {
 		surface.width = round(clamp(surface.width || 1000, 100, 10000));
 		surface.height = round(clamp(surface.height || 1000, 100, 10000));
+		surface.shape = config.product_type === 'cylindrical' ? 'rect' : (surface.shape === 'circle' ? 'circle' : 'rect');
 		surface.workspace = constrainBox(surface.workspace || { x: surface.width * 0.25, y: surface.height * 0.2, width: surface.width * 0.5, height: surface.height * 0.6 }, surface);
 		const printArea = surface.print_area && typeof surface.print_area === 'object' ? surface.print_area : {};
 		surface.print_area = {
@@ -246,6 +247,7 @@
 					<label>${esc(i18n.id)}<input data-surface-id="${index}" value="${esc(surface.id)}" /></label>
 					<label>${esc(config.product_type === 'cylindrical' ? i18n.mockupWidth : i18n.canvasWidth)}<input type="number" min="100" max="10000" step="1" data-path="surfaces.${index}.width" value="${surface.width}" /></label>
 					<label>${esc(config.product_type === 'cylindrical' ? i18n.mockupHeight : i18n.canvasHeight)}<input type="number" min="100" max="10000" step="1" data-path="surfaces.${index}.height" value="${surface.height}" /></label>
+					${config.product_type === 'flat' ? `<label>${esc(i18n.surfaceShape)}<select data-path="surfaces.${index}.shape"><option value="rect" ${surface.shape === 'rect' ? 'selected' : ''}>${esc(i18n.rectangle)}</option><option value="circle" ${surface.shape === 'circle' ? 'selected' : ''}>${esc(i18n.circle)}</option></select></label>` : ''}
 				</div>
 				${config.product_type === 'cylindrical' ? projectionControls(surface, index) : ''}
 				<div class="fpcw-surface-editor">
@@ -258,8 +260,8 @@
 						<div class="fpcw-canvas-color" data-canvas-color></div>
 						${previewAttachmentId(index) ? `<img data-base-preview data-attachment-preview="${previewAttachmentId(index)}" alt="" />` : '<div data-base-preview class="fpcw-base-placeholder"></div>'}
 						${config.product_type === 'cylindrical' ? '<div class="fpcw-cylinder-guide" data-cylinder-guide aria-hidden="true"></div>' : ''}
-						${editableBox(index, 'base_image_transform', i18n.baseImage, active)}
-						${editableBox(index, editingTarget, editingLabel, active)}
+						${editableBox(index, 'base_image_transform', i18n.baseImage, active, surface)}
+						${editableBox(index, editingTarget, editingLabel, active, surface)}
 					</div>
 					<p class="description fpcw-drag-help">${esc(i18n.dragHelp)}</p>
 					${boxControls(index, 'base_image_transform', i18n.baseImagePosition, surface.base_image_transform, surface)}
@@ -332,9 +334,10 @@
 		return target === 'projection_frame' ? 'projection.frame' : target;
 	}
 
-	function editableBox(surfaceIndex, target, label, active) {
+	function editableBox(surfaceIndex, target, label, active, surface) {
 		const handles = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
-		return `<div class="fpcw-edit-box fpcw-edit-box--${target === 'base_image_transform' ? 'base' : 'workspace'} ${active === target ? 'is-active' : ''}" data-edit-box="${target}" data-surface="${surfaceIndex}" tabindex="0"><span>${esc(label)}</span>${handles.map((handle) => `<i data-resize-handle="${handle}"></i>`).join('')}</div>`;
+		const circleClass = target !== 'base_image_transform' && config.product_type === 'flat' && surface && surface.shape === 'circle' ? 'is-circle' : '';
+		return `<div class="fpcw-edit-box fpcw-edit-box--${target === 'base_image_transform' ? 'base' : 'workspace'} ${circleClass} ${active === target ? 'is-active' : ''}" data-edit-box="${target}" data-surface="${surfaceIndex}" tabindex="0"><span>${esc(label)}</span>${handles.map((handle) => `<i data-resize-handle="${handle}"></i>`).join('')}</div>`;
 	}
 
 	function boxControls(index, target, label, box, surface) {
@@ -462,6 +465,8 @@
 		boxStyle(preview.querySelector('[data-edit-box="base_image_transform"]'), surface.base_image_transform, surface);
 		boxStyle(preview.querySelector('[data-edit-box="workspace"]'), surface.workspace, surface);
 		boxStyle(preview.querySelector('[data-edit-box="projection_frame"]'), surface.projection.frame, surface);
+		const workspaceBox = preview.querySelector('[data-edit-box="workspace"]');
+		if (workspaceBox) workspaceBox.classList.toggle('is-circle', config.product_type === 'flat' && surface.shape === 'circle');
 		['workspace', 'base_image_transform', 'projection_frame'].forEach((target) => {
 			const path = boxPath(target);
 			const box = boxValue(surface, target);
@@ -540,6 +545,7 @@
 		const boxMatch = input.dataset.path.match(/^surfaces\.(\d+)\.(workspace|base_image_transform|projection\.frame)\./);
 		const printMapMatch = input.dataset.path.match(/^surfaces\.(\d+)\.print_area\.(width|height)$/);
 		const projectionMatch = input.dataset.path.match(/^surfaces\.(\d+)\.projection\./);
+		const shapeMatch = input.dataset.path.match(/^surfaces\.(\d+)\.shape$/);
 		const previewLabelMatch = input.dataset.path.match(/^surfaces\.(\d+)\.projection\.preview_views\.\d+\.label$/);
 		if (canvasMatch) {
 			const index = Number(canvasMatch[1]);
@@ -557,6 +563,10 @@
 			const index = Number(printMapMatch[1]);
 			normalizeSurface(config.surfaces[index]);
 			updateSurfacePreview(index);
+		} else if (shapeMatch) {
+			const index = Number(shapeMatch[1]);
+			normalizeSurface(config.surfaces[index]);
+			updateSurfacePreview(index);
 		} else if (projectionMatch) {
 			normalizeSurface(config.surfaces[Number(projectionMatch[1])]);
 			if (previewLabelMatch) sync();
@@ -568,6 +578,10 @@
 
 	root.addEventListener('change', (event) => {
 		const input = event.target;
+		if (input.dataset.path && input.tagName === 'SELECT') {
+			input.dispatchEvent(new Event('input', { bubbles: true }));
+			return;
+		}
 		if (input.dataset.colorId != null) {
 			setColorId(Number(input.dataset.colorId), input.value);
 			render();
@@ -610,7 +624,7 @@
 		}
 		if (action === 'add-surface') {
 			const id = uniqueId('surface', config.surfaces);
-			config.surfaces.push({ id, label: i18n.newSurface, width: 1000, height: 1000, workspace: { x: 250, y: 200, width: 500, height: 600 }, print_area: { width: 2000, height: 800 }, base_image_transform: { x: 0, y: 0, width: 1000, height: 1000 }, projection: { wrap_angle: 180, top_scale: 100, bottom_scale: 100, shading: 45, frame: { x: 250, y: 200, width: 500, height: 600 }, preview_views: defaultPreviewViews(), mask_image_id: 0, overlay_image_id: 0 }, allow_images: true, allow_text: true, max_images: 1, max_texts: 3 });
+			config.surfaces.push({ id, label: i18n.newSurface, width: 1000, height: 1000, shape: 'rect', workspace: { x: 250, y: 200, width: 500, height: 600 }, print_area: { width: 2000, height: 800 }, base_image_transform: { x: 0, y: 0, width: 1000, height: 1000 }, projection: { wrap_angle: 180, top_scale: 100, bottom_scale: 100, shading: 45, frame: { x: 250, y: 200, width: 500, height: 600 }, preview_views: defaultPreviewViews(), mask_image_id: 0, overlay_image_id: 0 }, allow_images: true, allow_text: true, max_images: 1, max_texts: 3 });
 			config.colors.forEach((color) => { color.surfaces[id] = { enabled: true, image_id: 0 }; });
 			openSurfaces.clear();
 			openSurfaces.add(config.surfaces.length - 1);
