@@ -42,6 +42,7 @@ delete_option( 'fpcw_db_version' );
 delete_option( 'fpcw_settings' );
 delete_option( 'fpcw_sample_template_id' );
 delete_option( 'fpcw_sample_mug_attachment_id' );
+delete_option( 'fpcw_template_library_version' );
 
 $table = $wpdb->prefix . 'fpcw_sessions';
 $wpdb->query( "DROP TABLE IF EXISTS {$table}" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared

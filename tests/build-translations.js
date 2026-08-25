@@ -274,7 +274,7 @@ function poEscape(value) {
 
 function buildPo(messages) {
 	const header = [
-		'Project-Id-Version: Flexible Product Customizer 1.6.0',
+		'Project-Id-Version: Flexible Product Customizer 1.6.1',
 		'Language: es_ES',
 		'MIME-Version: 1.0',
 		'Content-Type: text/plain; charset=UTF-8',
@@ -288,7 +288,7 @@ function buildPo(messages) {
 
 function buildMo(messages) {
 	const header = [
-		'Project-Id-Version: Flexible Product Customizer 1.6.0',
+		'Project-Id-Version: Flexible Product Customizer 1.6.1',
 		'Language: es_ES',
 		'MIME-Version: 1.0',
 		'Content-Type: text/plain; charset=UTF-8',

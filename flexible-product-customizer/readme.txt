@@ -4,7 +4,7 @@ Tags: woocommerce, product customizer, personalization, print, webview
 Requires at least: 6.5
 Requires PHP: 7.4
 WC requires at least: 9.6
-Stable tag: 1.6.0
+Stable tag: 1.6.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -44,6 +44,9 @@ Unordered session files and data are deleted automatically. A stale cart line is
 No. Creating an order permanently claims the customization and disables its expiration.
 
 == Changelog ==
+
+= 1.6.1 =
+* Ensures the bundled template library installs itself even when the plugin database version was already updated.
 
 = 1.6.0 =
 * Adds a bundled blank-template library for shirts, hoodies, sweatshirts, caps, mugs, posters, banners, tumblers, notebooks, lanyards, clocks, mousepads, buttons, and puzzles.

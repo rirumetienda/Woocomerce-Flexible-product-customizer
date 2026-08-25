@@ -13,15 +13,29 @@ final class Template_Library {
 	const TEMPLATE_META = '_fpcw_library_template';
 	const ASSET_META    = '_fpcw_library_asset';
 	const ASSET_DIR     = 'assets/demo/library/';
+	const OPTION        = 'fpcw_template_library_version';
+	const VERSION       = '1.0.0';
 
 	/** @return void */
+	public static function maybe_install() {
+		if ( self::VERSION === (string) get_option( self::OPTION ) ) {
+			return;
+		}
+		if ( self::install() ) {
+			update_option( self::OPTION, self::VERSION, false );
+		}
+	}
+
+	/** @return bool */
 	public static function install() {
 		$templates = new Template_Manager();
 		$templates->register_post_type();
 		$assets = self::install_assets();
+		$ok = false;
 		foreach ( self::definitions( $assets ) as $definition ) {
-			self::install_template( $templates, $definition );
+			$ok = self::install_template( $templates, $definition ) || $ok;
 		}
+		return $ok;
 	}
 
 	/** @return array<string,int> */
@@ -427,7 +441,7 @@ final class Template_Library {
 		return array( 'id' => $id, 'label' => $label, 'hex' => $hex, 'variation_value' => $id );
 	}
 
-	/** @return void */
+	/** @return bool */
 	private static function install_template( Template_Manager $templates, array $definition ) {
 		$existing = get_posts(
 			array(
@@ -441,7 +455,7 @@ final class Template_Library {
 			)
 		);
 		if ( $existing ) {
-			return;
+			return true;
 		}
 		$template_id = wp_insert_post(
 			array(
@@ -452,9 +466,10 @@ final class Template_Library {
 			true
 		);
 		if ( is_wp_error( $template_id ) ) {
-			return;
+			return false;
 		}
 		update_post_meta( $template_id, Template_Manager::META_KEY, $templates->sanitize_config( $definition['config'] ) );
 		update_post_meta( $template_id, self::TEMPLATE_META, $definition['slug'] );
+		return true;
 	}
 }

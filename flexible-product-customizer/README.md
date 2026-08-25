@@ -68,4 +68,4 @@ El contrato de FluxBuilder/WebView, los eventos JavaScript y las rutas REST est√
 
 ## Biblioteca incluida
 
-La version 1.6.0 instala una biblioteca de plantillas blank con mockups PNG ligeros para prendas, tazas, posters, banners, termo, mousepads, broches, rompecabezas, cuadernos, lanyards y reloj redondo. Las superficies circulares usan `shape: circle` y recortan el diseno final dentro del limite redondo.
+La version 1.6.0+ instala una biblioteca de plantillas blank con mockups PNG ligeros para prendas, tazas, posters, banners, termo, mousepads, broches, rompecabezas, cuadernos, lanyards y reloj redondo. Las superficies circulares usan `shape: circle` y recortan el diseno final dentro del limite redondo.

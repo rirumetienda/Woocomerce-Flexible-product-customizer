@@ -26,7 +26,7 @@ final class Activator {
 		}
 
 		self::install_sample_template();
-		Template_Library::install();
+		Template_Library::maybe_install();
 	}
 
 	/**
@@ -42,10 +42,8 @@ final class Activator {
 				self::migrate_templates();
 				self::install_sample_template();
 			}
-			if ( ! $installed || version_compare( $installed, '1.6.0', '<' ) ) {
-				Template_Library::install();
-			}
 		}
+		Template_Library::maybe_install();
 	}
 
 	/** @return void */
