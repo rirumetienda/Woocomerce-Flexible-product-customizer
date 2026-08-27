@@ -266,8 +266,14 @@ final class Rest_Controller {
 		unset( $validated['used_file_ids'] );
 		$payload                     = $session['payload'];
 		$production_ids              = wp_list_pluck( isset( $payload['production_files'] ) ? $payload['production_files'] : array(), 'surface_id' );
+		$used_surface_ids = array();
+		foreach ( isset( $validated['surfaces'] ) ? $validated['surfaces'] : array() as $surface ) {
+			if ( ! empty( $surface['id'] ) && ! empty( $surface['objects'] ) ) {
+				$used_surface_ids[] = sanitize_title( $surface['id'] );
+			}
+		}
 		$normalized_snapshot = $this->templates->normalize_snapshot( $payload['template_snapshot'] );
-		$required_surface_ids = $this->templates->available_surface_ids( $normalized_snapshot, $validated['color_id'] );
+		$required_surface_ids = array_values( array_intersect( $this->templates->available_surface_ids( $normalized_snapshot, $validated['color_id'] ), array_unique( $used_surface_ids ) ) );
 		$required_preview_keys = array();
 		$preview_keys = array();
 		foreach ( isset( $payload['previews'] ) && is_array( $payload['previews'] ) ? $payload['previews'] : array() as $preview ) {

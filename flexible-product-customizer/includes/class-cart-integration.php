@@ -130,7 +130,11 @@ final class Cart_Integration {
 						return array();
 					}
 					$previews = array();
+					$used_ids = $this->products->used_surface_ids( $session['payload'] );
 					foreach ( isset( $session['payload']['previews'] ) ? $session['payload']['previews'] : array() as $preview ) {
+						if ( $used_ids && ! in_array( $preview['surface_id'], $used_ids, true ) ) {
+							continue;
+						}
 						$previews[] = array(
 							'surface_id' => $preview['surface_id'],
 							'view_id'    => isset( $preview['view_id'] ) ? $preview['view_id'] : 'default',
@@ -190,29 +194,28 @@ final class Cart_Integration {
 			return $item_data;
 		}
 		$payload = $this->storage->hydrate_payload_urls( $session['payload'], $session );
-		$item_data[] = array( 'key' => __( 'Customization', 'flexible-product-customizer' ), 'value' => esc_html( $payload['template_name'] ) );
-		$item_data[] = array(
-			'key'     => __( 'Available until', 'flexible-product-customizer' ),
-			'value'   => esc_html( $this->repository->expiration_display( $session ) ),
-			'display' => '<strong class="fpcw-expiry">' . esc_html( $this->repository->expiration_display( $session ) ) . '</strong>',
-		);
+		$expiry  = $this->repository->expiration_display( $session );
+		$summary = '<span class="fpcw-cart-summary-title">' . esc_html( $payload['template_name'] ) . '</span>';
+		$summary .= '<small class="fpcw-cart-summary-expiry">' . esc_html__( 'Available until', 'flexible-product-customizer' ) . ': ' . esc_html( $expiry ) . '</small>';
+		$item_data[] = array( 'key' => __( 'Customization', 'flexible-product-customizer' ), 'value' => esc_html( $payload['template_name'] ), 'display' => $summary );
+
 		$used_surfaces = $this->products->used_surface_labels( $session['payload'] );
 		if ( $used_surfaces ) {
-			$item_data[] = array( 'key' => __( 'Used surfaces', 'flexible-product-customizer' ), 'value' => esc_html( implode( ', ', $used_surfaces ) ) );
+			$item_data[] = array( 'key' => __( 'Surfaces', 'flexible-product-customizer' ), 'value' => esc_html( implode( ', ', $used_surfaces ) ) );
 		}
 		$surcharge = $this->products->surface_surcharge( $session );
 		if ( $surcharge > 0 ) {
 			$item_data[] = array( 'key' => __( 'Customization surcharge', 'flexible-product-customizer' ), 'value' => wp_strip_all_tags( wc_price( $surcharge ) ), 'display' => wc_price( $surcharge ) );
 		}
-		if ( ! empty( $payload['uploads'] ) ) {
-			$links = array();
-			foreach ( $payload['uploads'] as $file ) {
-				$links[] = '<a href="' . esc_url( $file['url'] ) . '" target="_blank" rel="noopener">' . esc_html( $file['original_name'] ) . '</a>';
-			}
-			$item_data[] = array( 'key' => __( 'Source files', 'flexible-product-customizer' ), 'value' => wp_strip_all_tags( implode( ', ', $links ) ), 'display' => implode( '<br>', $links ) );
+
+		$edit_url = add_query_arg( 'fpc_edit', $session['token'], get_permalink( $session['product_id'] ) );
+		$new_args = array( 'fpc_new' => '1' );
+		if ( ! empty( $session['variation_id'] ) ) {
+			$new_args['fpc_variation_id'] = (int) $session['variation_id'];
 		}
-		$edit_url    = add_query_arg( 'fpc_edit', $session['token'], get_permalink( $session['product_id'] ) );
-		$item_data[] = array( 'key' => __( 'Design', 'flexible-product-customizer' ), 'value' => __( 'Edit customization', 'flexible-product-customizer' ), 'display' => '<a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit customization', 'flexible-product-customizer' ) . '</a>' );
+		$add_url = add_query_arg( $new_args, get_permalink( $session['product_id'] ) );
+		$actions = '<span class="fpcw-cart-actions"><a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit customization', 'flexible-product-customizer' ) . '</a><a href="' . esc_url( $add_url ) . '">' . esc_html__( 'Add another customization', 'flexible-product-customizer' ) . '</a></span>';
+		$item_data[] = array( 'key' => __( 'Design', 'flexible-product-customizer' ), 'value' => __( 'Edit customization', 'flexible-product-customizer' ), 'display' => $actions );
 		return $item_data;
 	}
 
@@ -223,8 +226,9 @@ final class Cart_Integration {
 			return $thumbnail;
 		}
 		$previews = '';
+		$used_ids = $this->products->used_surface_ids( $session['payload'] );
 		foreach ( $session['payload']['previews'] as $preview ) {
-			if ( empty( $preview['relative_path'] ) ) {
+			if ( empty( $preview['relative_path'] ) || ( $used_ids && ! in_array( $preview['surface_id'], $used_ids, true ) ) ) {
 				continue;
 			}
 			$url = $this->storage->public_url( $preview['relative_path'] );
@@ -237,10 +241,22 @@ final class Cart_Integration {
 	/** @param array $images Store API images. @param array $cart_item Cart item. @param string $cart_item_key Cart key. @return array */
 	public function store_api_images( $images, $cart_item, $cart_item_key ) {
 		$session = $this->session_from_cart_item( $cart_item );
-		if ( ! $session || empty( $session['payload']['previews'][0]['relative_path'] ) ) {
+		if ( ! $session || empty( $session['payload']['previews'] ) ) {
 			return $images;
 		}
-		$url   = $this->storage->public_url( $session['payload']['previews'][0]['relative_path'] );
+		$used_ids = $this->products->used_surface_ids( $session['payload'] );
+		$preview = null;
+		foreach ( $session['payload']['previews'] as $candidate ) {
+			if ( empty( $candidate['relative_path'] ) || ( $used_ids && ! in_array( $candidate['surface_id'], $used_ids, true ) ) ) {
+				continue;
+			}
+			$preview = $candidate;
+			break;
+		}
+		if ( ! $preview ) {
+			return $images;
+		}
+		$url   = $this->storage->public_url( $preview['relative_path'] );
 		$image = ! empty( $images[0] ) ? (array) $images[0] : array();
 		$image = (object) array_merge(
 			$image,

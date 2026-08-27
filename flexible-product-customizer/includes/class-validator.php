@@ -114,7 +114,9 @@ final class Validator {
 				}
 			}
 
-			$clean_surfaces[] = array( 'id' => $surface['id'], 'objects' => $clean );
+			if ( $clean ) {
+				$clean_surfaces[] = array( 'id' => $surface['id'], 'objects' => $clean );
+			}
 			$element_count += count( $clean );
 		}
 		if ( ! $element_count ) {

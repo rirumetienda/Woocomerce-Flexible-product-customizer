@@ -90,6 +90,7 @@ final class Frontend {
 				'initialVariationId' => $initial_variation_id,
 				'webview'      => ! empty( $_GET['fpc_webview'] ),
 				'bridge'       => $bridge_context,
+				'newCustomization' => ! empty( $_GET['fpc_new'] ),
 				'i18n'         => array(
 					'chooseOptions' => __( 'Choose the product options before opening the editor.', 'flexible-product-customizer' ),
 					'uploadError'   => __( 'The image could not be uploaded.', 'flexible-product-customizer' ),
@@ -105,6 +106,8 @@ final class Frontend {
 					'exportError'    => __( 'The generated image could not be exported.', 'flexible-product-customizer' ),
 					'saving'        => __( 'Saving...', 'flexible-product-customizer' ),
 					'saved'         => __( 'Customization ready', 'flexible-product-customizer' ),
+					'addAnotherCustomization' => __( 'Add another customization', 'flexible-product-customizer' ),
+					'extra'         => __( 'extra', 'flexible-product-customizer' ),
 					'expires'       => __( 'Available in your cart until %s. After that date the design and files are deleted automatically.', 'flexible-product-customizer' ),
 					'customizationRequired' => __( 'Save your customization to enable adding this product to the cart.', 'flexible-product-customizer' ),
 					'variationChanged' => __( 'Save the customization again for the selected variation.', 'flexible-product-customizer' ),
@@ -136,6 +139,10 @@ final class Frontend {
 				<?php esc_html_e( 'Customize product', 'flexible-product-customizer' ); ?>
 			</button>
 			<div id="fpcw-saved-summary" class="fpcw-saved-summary" hidden></div>
+			<button type="button" class="button fpcw-add-another" id="fpcw-add-another" hidden>
+				<span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
+				<?php esc_html_e( 'Add another customization', 'flexible-product-customizer' ); ?>
+			</button>
 		</div>
 		<?php
 	}
@@ -166,16 +173,7 @@ final class Frontend {
 		if ( ! $extras ) {
 			return $price_html;
 		}
-		$rows = array();
-		foreach ( $extras as $extra ) {
-			$rows[] = sprintf(
-				/* translators: 1: formatted surcharge, 2: surface label. */
-				esc_html__( '+ %1$s extra - %2$s', 'flexible-product-customizer' ),
-				esc_html( $extra['display'] ),
-				esc_html( $extra['label'] )
-			);
-		}
-		return $price_html . '<span class="fpcw-price-extras">' . implode( '<br>', $rows ) . '</span>';
+		return $price_html . '<span class="fpcw-price-extras" data-fpcw-price-extra-live hidden></span>';
 	}
 
 	/** @return void */
@@ -241,6 +239,7 @@ final class Frontend {
 
 					<main class="fpcw-stage-wrap">
 						<div id="fpcw-surface-tabs" class="fpcw-tabs" role="tablist"></div>
+						<div id="fpcw-surface-overview" class="fpcw-surface-overview" aria-label="<?php esc_attr_e( 'Surfaces', 'flexible-product-customizer' ); ?>"></div>
 						<div id="fpcw-view-modes" class="fpcw-view-modes" role="group" aria-label="<?php esc_attr_e( 'Editor view', 'flexible-product-customizer' ); ?>" hidden>
 							<button type="button" id="fpcw-view-edit" aria-pressed="true"><span class="dashicons dashicons-edit" aria-hidden="true"></span><?php esc_html_e( 'Print design', 'flexible-product-customizer' ); ?></button>
 							<button type="button" id="fpcw-view-wrapped" aria-pressed="false"><span class="dashicons dashicons-visibility" aria-hidden="true"></span><?php esc_html_e( 'Product preview', 'flexible-product-customizer' ); ?></button>

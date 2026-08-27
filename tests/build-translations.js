@@ -7,7 +7,7 @@ const domain = 'flexible-product-customizer';
 
 const es = {
 	'A design image is no longer available.': 'Una imagen del diseño ya no está disponible.',
-	'+ %1$s extra - %2$s': '+ %1$s extra - %2$s',
+	'Add another customization': 'Añadir otra personalización',
 	'Add an image or text before saving the customization.': 'Añade una imagen o texto antes de guardar la personalización.',
 	'Add selected fonts': 'Añadir fuentes seleccionadas',
 	'A price increment is charged only when the customer adds content to that surface. Use zero for the base surface.': 'El incremento de precio se cobra únicamente cuando el cliente añade contenido a esa superficie. Usa cero para la superficie base.',
@@ -236,6 +236,7 @@ const es = {
 	'White': 'Blanco',
 	'Wrapped preview': 'Vista envolvente',
 	'copy': 'copia',
+	'extra': 'extra',
 	'Wrapped product preview': 'Vista envolvente del producto',
 	'X position': 'Posición X',
 	'Y position': 'Posición Y',
@@ -274,7 +275,7 @@ function poEscape(value) {
 
 function buildPo(messages) {
 	const header = [
-		'Project-Id-Version: Flexible Product Customizer 1.6.2',
+		'Project-Id-Version: Flexible Product Customizer 1.6.3',
 		'Language: es_ES',
 		'MIME-Version: 1.0',
 		'Content-Type: text/plain; charset=UTF-8',
@@ -288,7 +289,7 @@ function buildPo(messages) {
 
 function buildMo(messages) {
 	const header = [
-		'Project-Id-Version: Flexible Product Customizer 1.6.2',
+		'Project-Id-Version: Flexible Product Customizer 1.6.3',
 		'Language: es_ES',
 		'MIME-Version: 1.0',
 		'Content-Type: text/plain; charset=UTF-8',

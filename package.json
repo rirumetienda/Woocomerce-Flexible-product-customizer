@@ -1,7 +1,7 @@
 {
   "name": "flexible-product-customizer-development",
   "private": true,
-  "version": "1.6.2",
+  "version": "1.6.3",
   "description": "Local validation tools for the WooCommerce plugin.",
   "scripts": {
     "test": "node tests/run-tests.js"

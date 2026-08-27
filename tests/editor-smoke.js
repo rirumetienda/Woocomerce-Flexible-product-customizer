@@ -4,7 +4,7 @@ const { JSDOM } = require('jsdom');
 const html = `<!doctype html><html><body>
 <form class="cart"><input name="variation_id" value="456"><button type="button" id="fpcw-open-editor"></button><input id="fpcw-token"><div id="fpcw-saved-summary" hidden></div><button class="single_add_to_cart_button" type="submit">Cart</button><section id="fpcw-product-previews" hidden><div id="fpcw-product-preview-list"></div></section></form>
 <section id="product-module"><dialog id="fpcw-editor-modal"><button data-fpcw-close></button>
-<div id="fpcw-color-control"></div><div id="fpcw-surface-tabs"></div>
+<div id="fpcw-color-control"></div><div id="fpcw-surface-tabs"></div><div id="fpcw-surface-overview"></div>
 <div id="fpcw-view-modes" hidden><button id="fpcw-view-edit"></button><button id="fpcw-view-wrapped"></button></div>
 <div id="fpcw-stage-canvases"><section id="fpcw-edit-panel"><div id="fpcw-canvas-shell"><canvas id="fpcw-canvas"></canvas></div></section><section id="fpcw-projection-panel" hidden><div id="fpcw-projection-shell"><canvas id="fpcw-mockup-canvas"></canvas><canvas id="fpcw-projection-canvas"></canvas></div><div id="fpcw-preview-angle-controls" hidden></div></section><div id="fpcw-loading" hidden></div></div>
 <div id="fpcw-editor-message"></div><div id="fpcw-expiry-line"></div>
@@ -74,7 +74,7 @@ function session(status) {
 }
 
 window.FPCW_EDITOR = {
-	productId: 123, isVariable: true, configuration, restUrl: 'https://store.test/wp-json/fpcw/v1', nonce: 'nonce',
+	productId: 123, isVariable: true, configuration, restUrl: 'https://store.test/wp-json/fpcw/v1?lang=es', nonce: 'nonce',
 	editToken: '', editVariationId: 0, initialVariationId: 0, webview: false, bridge: {},
 	i18n: {
 		chooseOptions: 'Choose options', uploadError: 'Upload error', saveError: 'Save error', imageLimit: 'Image limit',
@@ -88,8 +88,9 @@ window.FPCW_EDITOR = {
 window.fetch = async (url, options) => {
 	calls.push({ url, method: options.method, body: options.body });
 	let body = session('draft');
-	if (url.endsWith('/renders')) body = { file: { id: 'render' } };
-	if (url.endsWith('/save')) body = session('active');
+	const pathname = new URL(url).pathname;
+	if (pathname.endsWith('/renders')) body = { file: { id: 'render' } };
+	if (pathname.endsWith('/save')) body = session('active');
 	return { ok: true, status: 200, async json() { return body; } };
 };
 
@@ -133,6 +134,7 @@ if (!window.document.querySelector('.single_add_to_cart_button').disabled) throw
 	await window.FlexibleProductCustomizer.save();
 
 	const paths = calls.map((call) => new URL(call.url).pathname);
+	if (!calls.every((call) => new URL(call.url).searchParams.get('lang') === 'es')) throw new Error('REST URLs did not preserve the language query parameter.');
 	if (!paths.some((path) => path.endsWith('/sessions'))) throw new Error('Session creation was not requested.');
 	if (paths.filter((path) => path.endsWith('/renders')).length !== 4) throw new Error('Expected three preview uploads and one production render upload.');
 	if (!paths.some((path) => path.endsWith('/save'))) throw new Error('Final save was not requested.');

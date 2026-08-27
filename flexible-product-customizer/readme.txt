@@ -4,7 +4,7 @@ Tags: woocommerce, product customizer, personalization, print, webview
 Requires at least: 6.5
 Requires PHP: 7.4
 WC requires at least: 9.6
-Stable tag: 1.6.2
+Stable tag: 1.6.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -44,6 +44,12 @@ Unordered session files and data are deleted automatically. A stale cart line is
 No. Creating an order permanently claims the customization and disables its expiration.
 
 == Changelog ==
+
+= 1.6.3 =
+* Fixes REST upload URLs on stores that add query parameters such as language codes.
+* Saves, previews, displays, and charges only surfaces that contain customer content.
+* Adds compact cart actions and an add-another customization flow.
+* Adds a live multi-surface overview inside the customer editor.
 
 = 1.6.2 =
 * Moves bundled template installation to a safe init hook after WordPress rewrite is available.

@@ -290,6 +290,18 @@ final class Product_Settings {
 		return (float) wc_format_decimal( $total, wc_get_price_decimals() );
 	}
 
+	/** @param array $payload Stored customization payload. @return array<int,string> */
+	public function used_surface_ids( array $payload ) {
+		$used = array();
+		foreach ( isset( $payload['design']['surfaces'] ) ? $payload['design']['surfaces'] : array() as $surface ) {
+			$id = isset( $surface['id'] ) ? sanitize_title( $surface['id'] ) : '';
+			if ( $id && ! empty( $surface['objects'] ) ) {
+				$used[] = $id;
+			}
+		}
+		return array_values( array_unique( $used ) );
+	}
+
 	/** @param array $payload Stored customization payload. @return array */
 	public function used_surface_labels( array $payload ) {
 		$labels = array();
@@ -297,9 +309,9 @@ final class Product_Settings {
 			$labels[ $surface['id'] ] = $surface['label'];
 		}
 		$used = array();
-		foreach ( isset( $payload['design']['surfaces'] ) ? $payload['design']['surfaces'] : array() as $surface ) {
-			if ( ! empty( $surface['objects'] ) && isset( $labels[ $surface['id'] ] ) ) {
-				$used[] = $labels[ $surface['id'] ];
+		foreach ( $this->used_surface_ids( $payload ) as $surface_id ) {
+			if ( isset( $labels[ $surface_id ] ) ) {
+				$used[] = $labels[ $surface_id ];
 			}
 		}
 		return $used;

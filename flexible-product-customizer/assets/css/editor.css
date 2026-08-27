@@ -1,10 +1,12 @@
 .fpcw-launcher { margin: 0 0 16px; }
-.fpcw-open-editor { display: inline-flex !important; align-items: center; justify-content: center; gap: 7px; min-height: 44px; white-space: normal; }
+.fpcw-open-editor, .fpcw-add-another { display: inline-flex !important; align-items: center; justify-content: center; gap: 7px; min-height: 44px; white-space: normal; }
+.fpcw-add-another { margin-top: 8px; }
 .fpcw-open-editor .dashicons, .fpcw-editor button .dashicons { flex: 0 0 18px; width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
 .fpcw-saved-summary { box-sizing: border-box; max-width: 620px; padding: 10px 12px; margin-top: 10px; color: #174c31; background: #edf8f1; border-left: 3px solid #27864f; font-size: 14px; }
 .fpcw-saved-summary.is-error { color: #8e2024; background: #fff1f1; border-left-color: #c7353a; }
 .single_add_to_cart_button[data-fpcw-locked="1"] { opacity: .5; cursor: not-allowed; }
-.fpcw-price-extras { display: block; margin-top: 5px; color: #4f5862; font-size: 13px; font-weight: 600; line-height: 1.45; }
+.fpcw-price-extras { display: block; margin-top: 5px; color: #4f5862; font-size: 13px; font-weight: 600; line-height: 1.45; white-space: pre-line; }
+.fpcw-price-extras[hidden] { display: none !important; }
 .fpcw-product-previews { margin-top: 14px; }
 .fpcw-product-previews > strong { display: block; margin-bottom: 7px; font-size: 13px; }
 .fpcw-preview-list { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -63,6 +65,12 @@ html.fpcw-modal-open, body.fpcw-modal-open { overflow: hidden !important; oversc
 .fpcw-tabs { display: flex; flex: 0 0 auto; align-self: stretch; gap: 2px; min-height: 42px; margin-bottom: 9px; overflow-x: auto; border-bottom: 1px solid #cbd0d5; scrollbar-width: thin; }
 .fpcw-tabs button { flex: 0 0 auto; max-width: 190px; min-height: 42px; padding: 6px 12px; overflow: hidden; color: #4b535c; background: transparent; border: 0; border-bottom: 3px solid transparent; font-size: 13px; font-weight: 600; letter-spacing: 0; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
 .fpcw-tabs button.is-active { color: #174d78; border-bottom-color: #1473e6; }
+.fpcw-surface-overview { display: flex; align-self: stretch; gap: 7px; min-height: 78px; margin: 0 0 8px; padding-bottom: 2px; overflow-x: auto; scrollbar-width: thin; }
+.fpcw-surface-card { display: grid; flex: 0 0 82px; grid-template-rows: 52px auto; gap: 4px; min-width: 0; padding: 4px; color: #3f4750; background: #fff; border: 1px solid #c5cbd1; border-radius: 5px; cursor: pointer; }
+.fpcw-surface-card[aria-pressed="true"] { color: #174d78; border-color: #1473e6; box-shadow: inset 0 0 0 1px #1473e6; }
+.fpcw-surface-card.is-used { background: #edf8f1; border-color: #74b987; }
+.fpcw-surface-card canvas { display: block; width: 100%; height: 52px; object-fit: contain; background: #f8f9fa; border: 1px solid #e0e4e7; }
+.fpcw-surface-card span { overflow: hidden; font-size: 10px; font-weight: 700; line-height: 1.15; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
 .fpcw-view-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-self: stretch; box-sizing: border-box; width: 100%; max-width: 100%; min-height: 38px; margin: 0 0 8px; overflow: hidden; border: 1px solid #aeb4bb; border-radius: 4px; }
 .fpcw-view-modes[hidden] { display: none; }
 .fpcw-view-modes button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; min-height: 36px; padding: 4px 8px; overflow: hidden; color: #4b535c; background: #fff; border: 0; border-left: 1px solid #aeb4bb; font-size: 12px; font-weight: 600; line-height: 1.2; letter-spacing: 0; overflow-wrap: anywhere; cursor: pointer; }

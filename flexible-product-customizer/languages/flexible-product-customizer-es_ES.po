@@ -1,8 +1,5 @@
 msgid ""
-msgstr "Project-Id-Version: Flexible Product Customizer 1.6.2\\nLanguage: es_ES\\nMIME-Version: 1.0\\nContent-Type: text/plain; charset=UTF-8\\nContent-Transfer-Encoding: 8bit\\nPlural-Forms: nplurals=2; plural=(n != 1);\\n"
-
-msgid "+ %1$s extra - %2$s"
-msgstr "+ %1$s extra - %2$s"
+msgstr "Project-Id-Version: Flexible Product Customizer 1.6.3\\nLanguage: es_ES\\nMIME-Version: 1.0\\nContent-Type: text/plain; charset=UTF-8\\nContent-Transfer-Encoding: 8bit\\nPlural-Forms: nplurals=2; plural=(n != 1);\\n"
 
 msgid "<p>When customers customize a product, the store temporarily saves uploaded images, entered text, generated previews, product identifiers, and an anonymous browser ownership token. Unordered customization data expires seven days after creation. When an order is created, these files and design data are retained with the order according to the store retention policy.</p>"
 msgstr "<p>Cuando los clientes personalizan un producto, la tienda guarda temporalmente las imágenes subidas, el texto introducido, las vistas previas generadas, los identificadores del producto y un token anónimo de propiedad del navegador. Los datos de personalizaciones sin pedido caducan siete días después de su creación. Cuando se crea un pedido, estos archivos y los datos del diseño se conservan con el pedido según la política de retención de la tienda.</p>"
@@ -15,6 +12,9 @@ msgstr "El incremento de precio se cobra únicamente cuando el cliente añade co
 
 msgid "Add an image or text before saving the customization."
 msgstr "Añade una imagen o texto antes de guardar la personalización."
+
+msgid "Add another customization"
+msgstr "Añadir otra personalización"
 
 msgid "Add color"
 msgstr "Añadir color"
@@ -714,3 +714,6 @@ msgstr "Tienes demasiadas personalizaciones abiertas. Espera a que caduquen las 
 
 msgid "copy"
 msgstr "copia"
+
+msgid "extra"
+msgstr "extra"

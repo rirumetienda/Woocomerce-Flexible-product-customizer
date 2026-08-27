@@ -174,11 +174,28 @@
 		const request = Object.assign({ credentials: 'same-origin', headers: {} }, options || {});
 		request.headers['X-WP-Nonce'] = boot.nonce;
 		if (request.body && !(request.body instanceof FormData)) request.headers['Content-Type'] = 'application/json';
-		const response = await fetch(boot.restUrl.replace(/\/$/, '') + path, request);
+		const response = await fetch(restEndpoint(path), request);
 		let result = {};
 		try { result = await response.json(); } catch (e) { result = {}; }
 		if (!response.ok) throw new Error(result.message || 'HTTP ' + response.status);
 		return result;
+	}
+
+	function restEndpoint(path) {
+		const cleanPath = String(path || '').replace(/^\/+/, '');
+		const base = boot.restUrl || '';
+		try {
+			const url = new URL(base, window.location.href);
+			const restRoute = url.searchParams.get('rest_route');
+			if (restRoute !== null) {
+				url.searchParams.set('rest_route', restRoute.replace(/\/+$/, '') + (cleanPath ? '/' + cleanPath : ''));
+				return url.toString();
+			}
+			url.pathname = url.pathname.replace(/\/+$/, '') + (cleanPath ? '/' + cleanPath : '');
+			return url.toString();
+		} catch (error) {
+			return base.replace(/\/+$/, '') + (cleanPath ? '/' + cleanPath : '');
+		}
 	}
 
 	function initDom() {
@@ -218,6 +235,9 @@
 		dom.outlineWidthValue = el('fpcw-outline-width-value');
 		dom.productPreviews = el('fpcw-product-previews');
 		dom.productPreviewList = el('fpcw-product-preview-list');
+		dom.surfaceOverview = el('fpcw-surface-overview');
+		dom.priceExtras = Array.from(document.querySelectorAll('[data-fpcw-price-extra-live]'));
+		dom.addAnother = el('fpcw-add-another');
 		dom.cartForm = document.querySelector('form.cart');
 		dom.cartButton = dom.cartForm ? dom.cartForm.querySelector('.single_add_to_cart_button') : null;
 		initialized = true;
@@ -245,6 +265,7 @@
 		el('fpcw-image-input').addEventListener('change', uploadImage);
 		el('fpcw-add-text').addEventListener('click', addText);
 		el('fpcw-save').addEventListener('click', save);
+		if (dom.addAnother) dom.addAnother.addEventListener('click', addAnotherCustomization);
 		el('fpcw-delete').addEventListener('click', deleteSelected);
 		el('fpcw-rotate').addEventListener('click', rotateSelected);
 		el('fpcw-fit').addEventListener('click', fitSelected);
@@ -325,6 +346,7 @@
 		});
 
 		renderSurfaceTabs();
+		renderSurfaceOverview();
 		renderPreviewAngleControls();
 
 		dom.font.innerHTML = '';
@@ -378,6 +400,59 @@
 			button.addEventListener('click', () => setSurface(item.id));
 			tabs.appendChild(button);
 		});
+	}
+
+	function usedSurfaces() {
+		return availableSurfaces().filter((item) => surfaceDesign(item.id).objects.length > 0);
+	}
+
+	function renderSurfaceOverview() {
+		if (!dom.surfaceOverview) return;
+		const items = availableSurfaces();
+		const key = state.colorId + ':' + items.map((item) => item.id).join('|');
+		if (dom.surfaceOverview.dataset.key !== key) {
+			dom.surfaceOverview.dataset.key = key;
+			dom.surfaceOverview.innerHTML = '';
+			items.forEach((item) => {
+				const button = document.createElement('button');
+				button.type = 'button';
+				button.className = 'fpcw-surface-card';
+				button.dataset.surfaceId = item.id;
+				button.addEventListener('click', () => setSurface(item.id));
+				button.appendChild(document.createElement('canvas'));
+				const label = document.createElement('span');
+				label.textContent = item.label;
+				button.appendChild(label);
+				dom.surfaceOverview.appendChild(button);
+			});
+		}
+		items.forEach((item) => {
+			const button = dom.surfaceOverview.querySelector('[data-surface-id="' + item.id + '"]');
+			if (!button) return;
+			const canvas = button.querySelector('canvas');
+			const dimensions = editingDimensions(item);
+			canvas.width = 120;
+			canvas.height = Math.max(48, Math.round(120 * dimensions.height / Math.max(1, dimensions.width)));
+			drawSurfaceOverview(canvas, item);
+			button.setAttribute('aria-pressed', String(item.id === state.surfaceId));
+			button.classList.toggle('is-used', surfaceDesign(item.id).objects.length > 0);
+		});
+	}
+
+	function drawSurfaceOverview(canvas, item) {
+		const ctx = canvas.getContext('2d');
+		if (!ctx) return;
+		const dimensions = editingDimensions(item);
+		const scale = Math.min(canvas.width / Math.max(1, dimensions.width), canvas.height / Math.max(1, dimensions.height));
+		const width = dimensions.width * scale;
+		const height = dimensions.height * scale;
+		ctx.save();
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		ctx.translate((canvas.width - width) / 2, (canvas.height - height) / 2);
+		ctx.scale(scale, scale);
+		if (isCylindrical()) drawScene(ctx, item, { base: false, printMap: true, objects: true, guides: false, selection: false });
+		else drawScene(ctx, item, { base: true, objects: true, guides: false, selection: false });
+		ctx.restore();
 	}
 
 	function previewViews(item) {
@@ -536,7 +611,9 @@
 		dom.summary.hidden = false;
 		dom.summary.classList.remove('is-error');
 		dom.summary.textContent = boot.i18n.saved + '. ' + boot.i18n.expires.replace('%s', response.expires_display);
+		if (dom.addAnother) dom.addAnother.hidden = false;
 		renderSavedPreviews(response.payload.previews || []);
+		updateLiveSurfaceExtras();
 		updateCartButton();
 	}
 
@@ -567,6 +644,8 @@
 		}
 		if (!availableSurfaces().some((item) => item.id === state.surfaceId)) state.surfaceId = availableSurfaces()[0] ? availableSurfaces()[0].id : '';
 		renderSurfaceTabs();
+		renderSurfaceOverview();
+		updateLiveSurfaceExtras();
 		configureCanvas();
 		refreshControls();
 		ensureSceneImages().then(render);
@@ -804,12 +883,15 @@
 			} else {
 				drawScene(dom.ctx, item, { base: true, objects: true, guides: true, selection: true });
 			}
+			renderSurfaceOverview();
 		});
 		['mask', 'overlay'].forEach((type) => {
 			const layerUrl = projectionLayerUrl(item, type);
 			if (layerUrl) cachedImage(layerUrl).then(() => { if (surface() === item && isCylindrical()) renderCylindrical(item); });
 		});
 		if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(positionSelectionTools);
+		renderSurfaceOverview();
+		updateLiveSurfaceExtras();
 	}
 
 	function ensureProjectionRenderer() {
@@ -1418,7 +1500,7 @@
 		return {
 			schema_version: 3,
 			color_id: state.colorId,
-			surfaces: availableSurfaces().map((item) => ({
+			surfaces: usedSurfaces().map((item) => ({
 				id: item.id,
 				objects: surfaceDesign(item.id).objects.map((object) => Object.assign({}, object)),
 			})),
@@ -1435,7 +1517,7 @@
 		el('fpcw-save').disabled = true;
 		announce(boot.i18n.saving);
 		try {
-			for (const item of availableSurfaces()) {
+			for (const item of usedSurfaces()) {
 				for (const view of previewViews(item)) {
 					await uploadRender(item, 'preview', await exportPreview(item, view.rotation), view);
 				}
@@ -1481,6 +1563,41 @@
 		return api('/sessions/' + state.token + '/renders', { method: 'POST', body: form });
 	}
 
+	function updateLiveSurfaceExtras() {
+		if (!dom.priceExtras || !dom.priceExtras.length) return;
+		const extras = usedSurfaces().filter((item) => Number(item.price_increment) > 0);
+		const text = extras.map((item) => '+ ' + item.price_display + ' ' + (boot.i18n.extra || 'extra') + ' - ' + item.label).join('\n');
+		dom.priceExtras.forEach((node) => {
+			node.textContent = text;
+			node.hidden = !text;
+		});
+	}
+
+	function addAnotherCustomization() {
+		if (state.busy) return;
+		state.token = '';
+		state.expiresDisplay = '';
+		state.variationId = variationId() || 0;
+		state.selectedId = '';
+		state.ready = false;
+		state.inCart = false;
+		state.uploads.clear();
+		state.previewRotations.clear();
+		state.designs.clear();
+		config.surfaces.forEach((item) => surfaceDesign(item.id));
+		if (dom.token) dom.token.value = '';
+		if (dom.productPreviewList) dom.productPreviewList.innerHTML = '';
+		if (dom.productPreviews) dom.productPreviews.hidden = true;
+		if (dom.addAnother) dom.addAnother.hidden = true;
+		dom.summary.hidden = false;
+		dom.summary.classList.add('is-error');
+		dom.summary.textContent = boot.i18n.customizationRequired;
+		renderSurfaceOverview();
+		updateLiveSurfaceExtras();
+		updateCartButton();
+		open();
+	}
+
 	function receiveBridgeMessage(event) {
 		if (event.origin && event.origin !== 'null' && event.origin !== window.location.origin) return;
 		let data = event.data;
@@ -1498,7 +1615,7 @@
 	window.FlexibleProductCustomizer = { open, close, save, setColor, setSurface, setView: setViewMode };
 	function start() {
 		if (!initDom()) return;
-		if (boot.editToken || boot.webview) window.setTimeout(open, 50);
+		if (boot.editToken || boot.webview || boot.newCustomization) window.setTimeout(open, 50);
 	}
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
 	else start();

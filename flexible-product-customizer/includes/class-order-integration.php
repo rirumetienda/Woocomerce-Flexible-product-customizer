@@ -106,6 +106,7 @@ final class Order_Integration {
 			return;
 		}
 
+		$used_surface_ids = $this->products->used_surface_ids( $payload );
 		$used_surfaces = $this->products->used_surface_labels( $payload );
 		$surcharge     = (float) $item->get_meta( '_fpcw_surface_surcharge', true );
 		if ( $plain ) {
@@ -130,6 +131,9 @@ final class Order_Integration {
 		if ( ! empty( $payload['previews'] ) ) {
 			echo '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">';
 			foreach ( $payload['previews'] as $preview ) {
+				if ( $used_surface_ids && ! in_array( $preview['surface_id'], $used_surface_ids, true ) ) {
+					continue;
+				}
 				$url = $this->storage->public_url( $preview['relative_path'] );
 				$label = ! empty( $preview['view_label'] ) ? $preview['view_label'] : __( 'Customization preview', 'flexible-product-customizer' );
 				echo '<a href="' . esc_url( $url ) . '" target="_blank" rel="noopener" title="' . esc_attr( $label ) . '"><img src="' . esc_url( $url ) . '" alt="' . esc_attr( $label ) . '" style="width:96px;height:96px;object-fit:contain;border:1px solid #ddd"></a>';
@@ -145,11 +149,17 @@ final class Order_Integration {
 			if ( empty( $payload[ $key ] ) ) {
 				continue;
 			}
-			echo '<div style="margin-top:6px"><span>' . esc_html( $label ) . ':</span> ';
 			$links = array();
 			foreach ( $payload[ $key ] as $file ) {
+				if ( 'production_files' === $key && $used_surface_ids && ! in_array( $file['surface_id'], $used_surface_ids, true ) ) {
+					continue;
+				}
 				$links[] = '<a href="' . esc_url( $this->storage->private_url( $session, $file, $order, true ) ) . '" target="_blank" rel="noopener">' . esc_html( $file['original_name'] ) . '</a>';
 			}
+			if ( ! $links ) {
+				continue;
+			}
+			echo '<div style="margin-top:6px"><span>' . esc_html( $label ) . ':</span> ';
 			echo wp_kses_post( implode( ' &middot; ', $links ) );
 			echo '</div>';
 		}
