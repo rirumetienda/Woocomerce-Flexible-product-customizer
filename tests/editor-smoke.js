@@ -100,6 +100,9 @@ window.document.dispatchEvent(new window.Event('DOMContentLoaded'));
 if (configuration.schema_version !== 6 || configuration.product_type !== 'cylindrical' || configuration.surfaces[0].workspace.width !== 600 || configuration.surfaces[0].print_area.width !== 600 || !configuration.surfaces[0].projection.frame || !configuration.surfaces[0].base_image_transform || !configuration.colors[0].surfaces.front) {
 	throw new Error('Legacy percentage snapshot was not migrated to the pixel canvas model.');
 }
+if (configuration.surfaces[0].preview_overlay_image_url !== '' || configuration.surfaces[0].projection.preview_views[0].mockup_image_id !== 0 || configuration.surfaces[0].projection.preview_views[0].mockup_image_url !== '') {
+	throw new Error('Preview layer fields were not normalized for the customer editor.');
+}
 
 if (!window.document.querySelector('.single_add_to_cart_button').disabled) throw new Error('Add to cart must start disabled.');
 
@@ -121,6 +124,9 @@ if (!window.document.querySelector('.single_add_to_cart_button').disabled) throw
 	window.document.getElementById('fpcw-view-wrapped').click();
 	if (projectionRenders < 1 || window.document.getElementById('fpcw-stage-canvases').dataset.view !== 'wrapped' || window.document.getElementById('fpcw-projection-panel').hidden) throw new Error('The cylindrical wrapped preview did not render.');
 	if (window.document.querySelectorAll('#fpcw-preview-angle-controls button').length !== 3) throw new Error('The cylindrical preview angle controls were not rendered.');
+	window.document.querySelectorAll('#fpcw-preview-angle-controls button')[1].click();
+	if (lastProjectionRotation !== -45 || window.document.querySelectorAll('#fpcw-preview-angle-controls button')[1].getAttribute('aria-pressed') !== 'true') throw new Error('The cylindrical preview angle view was not activated.');
+	window.document.querySelectorAll('#fpcw-preview-angle-controls button')[0].click();
 	const projectionCanvas = window.document.getElementById('fpcw-projection-canvas');
 	const pointerDown = new window.Event('pointerdown', { bubbles: true });
 	Object.defineProperties(pointerDown, { clientX: { value: 100 }, pointerId: { value: 1 } });

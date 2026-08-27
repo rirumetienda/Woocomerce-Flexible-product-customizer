@@ -37,7 +37,7 @@ window.FPCW_ADMIN = {
 		savingTemplate: 'Saving', templateSaved: 'Saved', saveFailed: 'Failed', baseImage: 'Base', editingArea: 'Area',
 		enableSurface: 'Available', previewAttribute: 'Preview', cylindricalProjection: 'Projection', wrapAngle: 'Wrap',
 		topDiameter: 'Top', bottomDiameter: 'Bottom', shading: 'Shading', printMap: 'Print map', printMapWidth: 'Print width', printMapHeight: 'Print height',
-		projectionFrame: 'Projection frame', projectionFramePosition: 'Projection position', projectionMask: 'Mask', lightingOverlay: 'Overlay', optionalProjectionLayers: 'Layers',
+		projectionFrame: 'Projection frame', projectionFramePosition: 'Projection position', projectionMask: 'Mask', previewMockupImage: 'Mockup', lightingOverlay: 'Overlay', topPreviewLayer: 'Top layer', angleSpecificImages: 'Angle images', optionalProjectionLayers: 'Layers',
 		previewAngles: 'Preview angles', show: 'Show', angleLabel: 'Angle label', rotationDegrees: 'Rotation', frontView: 'Front view', leftSide: 'Left side', rightSide: 'Right side',
 	},
 };
@@ -62,6 +62,8 @@ window.document.querySelector('[data-product-type="cylindrical"]').click();
 const wrapAngle = window.document.querySelector('[data-path="surfaces.0.projection.wrap_angle"]');
 if (!wrapAngle) throw new Error('Cylindrical projection controls were not shown after selecting the product type.');
 if (window.document.querySelectorAll('.fpcw-preview-angle-row').length !== 3) throw new Error('Default cylindrical preview angles were not shown.');
+if (!window.document.querySelector('[data-action="choose-surface-layer-image"][data-surface-field="preview_overlay_image_id"]')) throw new Error('Surface top preview layer picker was not shown.');
+if (!window.document.querySelector('[data-action="choose-preview-view-image"][data-view-field="mockup_image_id"]')) throw new Error('Angle-specific mockup picker was not shown.');
 wrapAngle.value = '270';
 wrapAngle.dispatchEvent(new window.Event('input', { bubbles: true }));
 const leftAngle = window.document.querySelector('[data-path="surfaces.0.projection.preview_views.1.rotation"]');
@@ -119,6 +121,7 @@ form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true 
 		throw new Error('Template state was not persisted before submit.');
 	}
 	if (saved.surfaces[0].projection.wrap_angle !== 270 || saved.surfaces[0].projection.preview_views[1].rotation !== -40 || saved.surfaces[0].print_area.width !== 2400 || !saved.surfaces[1].projection) throw new Error('Cylindrical surface geometry was not persisted.');
+if (saved.surfaces[0].preview_overlay_image_id !== 0 || saved.surfaces[0].projection.preview_views[0].mockup_image_id !== 0) throw new Error('Preview layer fields were not persisted.');
 	if (!saved.surfaces[0].base_image_transform) throw new Error('Base image position was not persisted.');
 	if (saved.surfaces[1].id !== 'front-copy' || !saved.colors[0].surfaces.front || !saved.colors[0].surfaces['front-copy']) throw new Error('Duplicated surface assignments were not persisted independently.');
 	for (const box of [saved.surfaces[0].projection.frame, saved.surfaces[0].base_image_transform]) {

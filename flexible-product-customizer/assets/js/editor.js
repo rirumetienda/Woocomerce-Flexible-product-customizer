@@ -14,6 +14,7 @@
 		designs: new Map(),
 		uploads: new Map(),
 		previewRotations: new Map(),
+		previewViewIds: new Map(),
 		selectedId: '',
 		viewMode: 'edit',
 		controlsObjectId: '',
@@ -73,6 +74,8 @@
 				width: Math.max(100, Math.min(10000, Math.round(Number(printArea.width || workspace.width || 1000)))),
 				height: Math.max(100, Math.min(10000, Math.round(Number(printArea.height || workspace.height || 1000)))),
 			};
+			item.preview_overlay_image_id = Number(item.preview_overlay_image_id || 0);
+			item.preview_overlay_image_url = item.preview_overlay_image_url || '';
 			item.projection = {
 				wrap_angle: Math.max(90, Math.min(360, Math.round(Number(projection.wrap_angle || 180)))),
 				top_scale: Math.max(50, Math.min(150, Math.round(Number(projection.top_scale || 100)))),
@@ -114,6 +117,12 @@
 				label: String(view && view.label ? view.label : id),
 				rotation: Math.max(-180, Math.min(180, Math.round(Number(view && view.rotation != null ? view.rotation : 0)))),
 				enabled: !view || view.enabled !== false,
+				mockup_image_id: Number(view && view.mockup_image_id || 0),
+				mask_image_id: Number(view && view.mask_image_id || 0),
+				overlay_image_id: Number(view && view.overlay_image_id || 0),
+				mockup_image_url: view && view.mockup_image_url || '',
+				mask_image_url: view && view.mask_image_url || '',
+				overlay_image_url: view && view.overlay_image_url || '',
 			});
 		});
 		return normalized.length ? normalized : defaultPreviewViews();
@@ -451,7 +460,7 @@
 		ctx.translate((canvas.width - width) / 2, (canvas.height - height) / 2);
 		ctx.scale(scale, scale);
 		if (isCylindrical()) drawScene(ctx, item, { base: false, printMap: true, objects: true, guides: false, selection: false });
-		else drawScene(ctx, item, { base: true, objects: true, guides: false, selection: false });
+		else drawScene(ctx, item, { base: true, objects: true, previewOverlay: true, guides: false, selection: false });
 		ctx.restore();
 	}
 
@@ -459,6 +468,13 @@
 		if (!isCylindrical() || !item || !item.projection) return [{ id: 'default', label: item ? item.label : '', rotation: 0, enabled: true }];
 		const views = normalizePreviewViews(item.projection.preview_views).filter((view) => view.enabled !== false);
 		return views.length ? views : [{ id: 'front', label: boot.i18n.frontView || 'Front view', rotation: 0, enabled: true }];
+	}
+
+	function currentPreviewView(item) {
+		const views = previewViews(item);
+		const activeId = item ? state.previewViewIds.get(item.id) : '';
+		const currentRotation = item ? Math.round(projectionRotation(item)) : 0;
+		return views.find((view) => view.id === activeId) || views.find((view) => Math.round(view.rotation) === currentRotation) || views[0] || null;
 	}
 
 	function renderPreviewAngleControls() {
@@ -469,7 +485,7 @@
 			dom.previewAngles.innerHTML = '';
 			return;
 		}
-		const current = Math.round(projectionRotation(item));
+		const activeView = currentPreviewView(item);
 		dom.previewAngles.hidden = false;
 		dom.previewAngles.innerHTML = '';
 		previewViews(item).forEach((view) => {
@@ -479,11 +495,12 @@
 			button.textContent = view.label;
 			button.dataset.rotation = String(view.rotation);
 			button.dataset.viewId = view.id;
-			button.setAttribute('aria-pressed', String(Math.round(view.rotation) === current));
+			button.setAttribute('aria-pressed', String(activeView && activeView.id === view.id));
 			button.addEventListener('click', () => {
-				setProjectionRotation(item, view.rotation);
+				state.previewViewIds.set(item.id, view.id);
+				setProjectionRotation(item, view.rotation, false);
 				renderPreviewAngleControls();
-				renderCylindrical(item);
+				render();
 				mobileEvent('previewAngleChanged', { surface_id: item.id, view_id: view.id, rotation: view.rotation });
 			});
 			dom.previewAngles.appendChild(button);
@@ -578,6 +595,7 @@
 		config = normalizeConfig(snapshot);
 		state.viewMode = 'edit';
 		state.previewRotations.clear();
+		state.previewViewIds.clear();
 		state.designs.clear();
 		config.surfaces.forEach((item) => surfaceDesign(item.id));
 		const design = response.payload.design || {};
@@ -826,8 +844,18 @@
 		const color = currentColor();
 		return color && color.surfaces && color.surfaces[item.id] ? color.surfaces[item.id].image_url || '' : '';
 	}
-	function projectionLayerUrl(item, type) {
-		return item && item.projection ? item.projection[type + '_image_url'] || '' : '';
+
+	function mockupBaseUrl(item, view) {
+		return view && view.mockup_image_url ? view.mockup_image_url : baseUrl(item);
+	}
+
+	function previewOverlayUrl(item) {
+		return item ? item.preview_overlay_image_url || '' : '';
+	}
+
+	function projectionLayerUrl(item, type, view) {
+		const viewUrl = view && view[type + '_image_url'] ? view[type + '_image_url'] : '';
+		return viewUrl || (item && item.projection ? item.projection[type + '_image_url'] || '' : '');
 	}
 
 	function loadImage(url) {
@@ -848,12 +876,15 @@
 	async function ensureSceneImages() {
 		const promises = [];
 		config.surfaces.forEach((item) => {
-			const url = baseUrl(item);
-			if (url) promises.push(loadImage(url).catch(() => null));
-			['mask', 'overlay'].forEach((type) => {
-				const layerUrl = projectionLayerUrl(item, type);
-				if (layerUrl) promises.push(loadImage(layerUrl).catch(() => null));
-			});
+			const urls = new Set([baseUrl(item), previewOverlayUrl(item)]);
+			if (isCylindrical()) {
+				['mask', 'overlay'].forEach((type) => urls.add(projectionLayerUrl(item, type)));
+				previewViews(item).forEach((view) => {
+					urls.add(mockupBaseUrl(item, view));
+					['mask', 'overlay'].forEach((type) => urls.add(projectionLayerUrl(item, type, view)));
+				});
+			}
+			urls.forEach((url) => { if (url) promises.push(loadImage(url).catch(() => null)); });
 		});
 		state.uploads.forEach((file) => promises.push(loadImage(file.url).catch(() => null)));
 		await Promise.all(promises);
@@ -867,28 +898,31 @@
 	function render() {
 		const item = surface();
 		if (!item || !dom.ctx) return;
+		const activeView = isCylindrical() ? currentPreviewView(item) : null;
 		if (isCylindrical()) {
 			drawScene(dom.ctx, item, { base: false, printMap: true, objects: true, guides: true, selection: true });
-			drawMockupScene(dom.mockupCtx, item);
-			renderCylindrical(item);
+			drawMockupScene(dom.mockupCtx, item, activeView);
+			renderCylindrical(item, undefined, undefined, activeView);
 		} else {
-			drawScene(dom.ctx, item, { base: true, objects: true, guides: true, selection: true });
+			drawScene(dom.ctx, item, { base: true, objects: true, previewOverlay: true, guides: true, selection: true });
 		}
-		const url = baseUrl(item);
-		if (url) cachedImage(url).then(() => {
+		const redraw = () => {
 			if (surface() !== item) return;
+			const latestView = isCylindrical() ? currentPreviewView(item) : null;
 			if (isCylindrical()) {
-				drawMockupScene(dom.mockupCtx, item);
-				renderCylindrical(item);
+				drawMockupScene(dom.mockupCtx, item, latestView);
+				renderCylindrical(item, undefined, undefined, latestView);
 			} else {
-				drawScene(dom.ctx, item, { base: true, objects: true, guides: true, selection: true });
+				drawScene(dom.ctx, item, { base: true, objects: true, previewOverlay: true, guides: true, selection: true });
 			}
 			renderSurfaceOverview();
-		});
-		['mask', 'overlay'].forEach((type) => {
-			const layerUrl = projectionLayerUrl(item, type);
-			if (layerUrl) cachedImage(layerUrl).then(() => { if (surface() === item && isCylindrical()) renderCylindrical(item); });
-		});
+		};
+		const urls = new Set([baseUrl(item), previewOverlayUrl(item)]);
+		if (isCylindrical()) {
+			urls.add(mockupBaseUrl(item, activeView));
+			['mask', 'overlay'].forEach((type) => urls.add(projectionLayerUrl(item, type, activeView)));
+		}
+		urls.forEach((url) => { if (url) cachedImage(url).then(redraw); });
 		if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(positionSelectionTools);
 		renderSurfaceOverview();
 		updateLiveSurfaceExtras();
@@ -936,18 +970,21 @@
 		return projectionTextureCanvas;
 	}
 
-	function renderCylindrical(item, maxSize, rotation) {
+	function renderCylindrical(item, maxSize, rotation, view) {
 		const renderer = ensureProjectionRenderer();
 		if (!renderer) {
 			return null;
 		}
-		const maskEntry = imageCache.get(projectionLayerUrl(item, 'mask'));
-		const overlayEntry = imageCache.get(projectionLayerUrl(item, 'overlay'));
-		return renderer.render(buildProjectionTexture(item), item, rotation == null ? projectionRotation(item) : rotation, maxSize || 1400, {
+		const activeView = view || currentPreviewView(item);
+		const maskEntry = imageCache.get(projectionLayerUrl(item, 'mask', activeView));
+		const overlayEntry = imageCache.get(projectionLayerUrl(item, 'overlay', activeView));
+		const canvas = renderer.render(buildProjectionTexture(item), item, rotation == null ? projectionRotation(item) : rotation, maxSize || 1400, {
 			maskImage: maskEntry && maskEntry.image ? maskEntry.image : null,
 			overlayImage: overlayEntry && overlayEntry.image ? overlayEntry.image : null,
 			baseTransform: baseImageBox(item),
 		});
+		drawProjectionPreviewOverlay(canvas, item);
+		return canvas;
 	}
 
 	function projectionPointerDown(event) {
@@ -979,6 +1016,30 @@
 		renderCylindrical(surface());
 	}
 
+	function drawPreviewOverlay(ctx, item) {
+		const url = previewOverlayUrl(item);
+		const entry = url ? imageCache.get(url) : null;
+		const image = entry && entry.image;
+		if (!image) return;
+		const box = baseImageBox(item);
+		ctx.drawImage(image, box.x, box.y, box.width, box.height);
+	}
+
+	function drawProjectionPreviewOverlay(canvas, item) {
+		if (!canvas || !canvas.width || !canvas.height) return;
+		const url = previewOverlayUrl(item);
+		const entry = url ? imageCache.get(url) : null;
+		const image = entry && entry.image;
+		if (!image) return;
+		const ctx = canvas.getContext('2d');
+		const scaleX = canvas.width / Math.max(1, Number(item.width) || 1);
+		const scaleY = canvas.height / Math.max(1, Number(item.height) || 1);
+		const box = baseImageBox(item);
+		ctx.save();
+		ctx.globalCompositeOperation = 'source-over';
+		ctx.drawImage(image, box.x * scaleX, box.y * scaleY, box.width * scaleX, box.height * scaleY);
+		ctx.restore();
+	}
 	function drawScene(ctx, item, options) {
 		const dimensions = editingDimensions(item);
 		ctx.save();
@@ -997,6 +1058,7 @@
 			}
 		}
 		if (options.objects !== false) drawObjects(ctx, item);
+		if (options.previewOverlay) drawPreviewOverlay(ctx, item);
 		if (options.guides) drawWorkspace(ctx, item);
 		if (options.selection && selected()) drawSelection(ctx, item, selected());
 		ctx.restore();
@@ -1031,13 +1093,13 @@
 		ctx.restore();
 	}
 
-	function drawMockupScene(ctx, item) {
+	function drawMockupScene(ctx, item, view) {
 		if (!ctx) return;
 		ctx.save();
 		ctx.clearRect(0, 0, item.width, item.height);
 		ctx.fillStyle = '#eef1f3';
 		ctx.fillRect(0, 0, item.width, item.height);
-		const url = baseUrl(item);
+		const url = mockupBaseUrl(item, view);
 		const entry = imageCache.get(url);
 		const image = entry && entry.image;
 		if (image) {
@@ -1451,7 +1513,7 @@
 		render();
 	}
 
-	async function exportPreview(item, rotation) {
+	async function exportPreview(item, rotation, view) {
 		await ensureSceneImages();
 		const max = 1400;
 		const scale = Math.min(1, max / Math.max(item.width, item.height));
@@ -1462,17 +1524,18 @@
 		ctx.scale(scale, scale);
 		ctx.fillStyle = isCylindrical() ? '#eef1f3' : ((config.colors.find((entry) => entry.id === state.colorId) || {}).hex || '#ffffff');
 		ctx.fillRect(0, 0, item.width, item.height);
-		const image = await cachedImage(baseUrl(item));
+		const image = await cachedImage(isCylindrical() ? mockupBaseUrl(item, view) : baseUrl(item));
 		if (image) {
 			const box = baseImageBox(item);
 			ctx.drawImage(image, box.x, box.y, box.width, box.height);
 		}
 		if (isCylindrical()) {
-			const projected = renderCylindrical(item, max, rotation);
+			const projected = renderCylindrical(item, max, rotation, view);
 			if (projected) ctx.drawImage(projected, 0, 0, item.width, item.height);
 			else drawObjects(ctx, item);
 		} else {
 			drawObjects(ctx, item);
+			drawPreviewOverlay(ctx, item);
 		}
 		return canvasBlob(canvas);
 	}
@@ -1519,7 +1582,7 @@
 		try {
 			for (const item of usedSurfaces()) {
 				for (const view of previewViews(item)) {
-					await uploadRender(item, 'preview', await exportPreview(item, view.rotation), view);
+					await uploadRender(item, 'preview', await exportPreview(item, view.rotation, view), view);
 				}
 				await uploadRender(item, 'production', await exportProduction(item));
 			}
@@ -1583,6 +1646,7 @@
 		state.inCart = false;
 		state.uploads.clear();
 		state.previewRotations.clear();
+		state.previewViewIds.clear();
 		state.designs.clear();
 		config.surfaces.forEach((item) => surfaceDesign(item.id));
 		if (dom.token) dom.token.value = '';

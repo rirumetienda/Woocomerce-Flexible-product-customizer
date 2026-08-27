@@ -1,5 +1,5 @@
 msgid ""
-msgstr "Project-Id-Version: Flexible Product Customizer 1.6.3\\nLanguage: es_ES\\nMIME-Version: 1.0\\nContent-Type: text/plain; charset=UTF-8\\nContent-Transfer-Encoding: 8bit\\nPlural-Forms: nplurals=2; plural=(n != 1);\\n"
+msgstr "Project-Id-Version: Flexible Product Customizer 1.6.4\\nLanguage: es_ES\\nMIME-Version: 1.0\\nContent-Type: text/plain; charset=UTF-8\\nContent-Transfer-Encoding: 8bit\\nPlural-Forms: nplurals=2; plural=(n != 1);\\n"
 
 msgid "<p>When customers customize a product, the store temporarily saves uploaded images, entered text, generated previews, product identifiers, and an anonymous browser ownership token. Unordered customization data expires seven days after creation. When an order is created, these files and design data are retained with the order according to the store retention policy.</p>"
 msgstr "<p>Cuando los clientes personalizan un producto, la tienda guarda temporalmente las imágenes subidas, el texto introducido, las vistas previas generadas, los identificadores del producto y un token anónimo de propiedad del navegador. Los datos de personalizaciones sin pedido caducan siete días después de su creación. Cuando se crea un pedido, estos archivos y los datos del diseño se conservan con el pedido según la política de retención de la tienda.</p>"
@@ -51,6 +51,9 @@ msgstr "No se pudo cargar una imagen."
 
 msgid "Angle label"
 msgstr "Etiqueta del ángulo"
+
+msgid "Angle-specific preview images"
+msgstr "Imágenes de vista previa por ángulo"
 
 msgid "Available color attributes"
 msgstr "Atributos de color disponibles"
@@ -370,6 +373,9 @@ msgstr "Ángulos de vista previa"
 msgid "Preview attribute"
 msgstr "Atributo de vista previa"
 
+msgid "Preview mockup image"
+msgstr "Imagen mockup de vista previa"
+
 msgid "Price increment when used"
 msgstr "Incremento de precio al utilizarla"
 
@@ -645,6 +651,9 @@ msgstr "Esta superficie alcanzó su límite de textos."
 
 msgid "Top diameter (%)"
 msgstr "Diámetro superior (%)"
+
+msgid "Top preview layer"
+msgstr "Capa superior de vista previa"
 
 msgid "Underline"
 msgstr "Subrayado"

@@ -22,6 +22,7 @@ const es = {
 	'An expired customization and its files were removed from your cart.': 'Se eliminó del carrito una personalización caducada junto con sus archivos.',
 	'An image could not be loaded.': 'No se pudo cargar una imagen.',
 	'Angle label': 'Etiqueta del ángulo',
+	'Angle-specific preview images': 'Imágenes de vista previa por ángulo',
 	'Available fonts': 'Fuentes disponibles',
 	'Available color attributes': 'Atributos de color disponibles',
 	'Available for this attribute': 'Disponible para este atributo',
@@ -129,6 +130,7 @@ const es = {
 	'PNG recommended. PNG, JPEG or WebP; maximum 10 MB and 10,000 x 10,000 px.': 'Se recomienda PNG. PNG, JPEG o WebP; máximo 10 MB y 10,000 x 10,000 px.',
 	'Plugin language': 'Idioma del plugin',
 	'Preview attribute': 'Atributo de vista previa',
+	'Preview mockup image': 'Imagen mockup de vista previa',
 	'Preview angles': 'Ángulos de vista previa',
 	'Price increment when used': 'Incremento de precio al utilizarla',
 	'Printable surfaces': 'Superficies imprimibles',
@@ -220,6 +222,7 @@ const es = {
 	'This surface has reached its image limit.': 'Esta superficie alcanzó su límite de imágenes.',
 	'This surface has reached its text limit.': 'Esta superficie alcanzó su límite de textos.',
 	'Top diameter (%)': 'Diámetro superior (%)',
+	'Top preview layer': 'Capa superior de vista previa',
 	'Underline': 'Subrayado',
 	'Upload image': 'Subir imagen',
 	'Upload fonts': 'Subir fuentes',
@@ -275,7 +278,7 @@ function poEscape(value) {
 
 function buildPo(messages) {
 	const header = [
-		'Project-Id-Version: Flexible Product Customizer 1.6.3',
+		'Project-Id-Version: Flexible Product Customizer 1.6.4',
 		'Language: es_ES',
 		'MIME-Version: 1.0',
 		'Content-Type: text/plain; charset=UTF-8',
@@ -289,7 +292,7 @@ function buildPo(messages) {
 
 function buildMo(messages) {
 	const header = [
-		'Project-Id-Version: Flexible Product Customizer 1.6.3',
+		'Project-Id-Version: Flexible Product Customizer 1.6.4',
 		'Language: es_ES',
 		'MIME-Version: 1.0',
 		'Content-Type: text/plain; charset=UTF-8',

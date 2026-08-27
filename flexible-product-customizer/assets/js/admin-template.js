@@ -45,9 +45,9 @@
 
 	function defaultPreviewViews() {
 		return [
-			{ id: 'front', label: i18n.frontView || 'Front view', rotation: 0, enabled: true },
-			{ id: 'left', label: i18n.leftSide || 'Left side', rotation: -45, enabled: true },
-			{ id: 'right', label: i18n.rightSide || 'Right side', rotation: 45, enabled: true },
+			{ id: 'front', label: i18n.frontView || 'Front view', rotation: 0, enabled: true, mockup_image_id: 0, mask_image_id: 0, overlay_image_id: 0 },
+			{ id: 'left', label: i18n.leftSide || 'Left side', rotation: -45, enabled: true, mockup_image_id: 0, mask_image_id: 0, overlay_image_id: 0 },
+			{ id: 'right', label: i18n.rightSide || 'Right side', rotation: 45, enabled: true, mockup_image_id: 0, mask_image_id: 0, overlay_image_id: 0 },
 		];
 	}
 
@@ -64,6 +64,9 @@
 				label: String(view && view.label ? view.label : id),
 				rotation: round(clamp(view && view.rotation != null ? view.rotation : 0, -180, 180)),
 				enabled: !view || view.enabled !== false,
+				mockup_image_id: Number(view && view.mockup_image_id ? view.mockup_image_id : 0),
+				mask_image_id: Number(view && view.mask_image_id ? view.mask_image_id : 0),
+				overlay_image_id: Number(view && view.overlay_image_id ? view.overlay_image_id : 0),
 			});
 		});
 		return normalized.length ? normalized : defaultPreviewViews();
@@ -109,6 +112,7 @@
 			height: round(clamp(printArea.height || surface.workspace.height || 1000, 100, 10000)),
 		};
 		surface.base_image_transform = constrainBox(surface.base_image_transform || { x: 0, y: 0, width: surface.width, height: surface.height }, surface);
+		surface.preview_overlay_image_id = Number(surface.preview_overlay_image_id || 0);
 		const projection = surface.projection && typeof surface.projection === 'object' ? surface.projection : {};
 		surface.projection = {
 			wrap_angle: round(clamp(projection.wrap_angle || 180, 90, 360)),
@@ -266,6 +270,8 @@
 					<p class="description fpcw-drag-help">${esc(i18n.dragHelp)}</p>
 					${boxControls(index, 'base_image_transform', i18n.baseImagePosition, surface.base_image_transform, surface)}
 					${boxControls(index, editingTarget, config.product_type === 'cylindrical' ? i18n.projectionFramePosition : i18n.workArea, boxValue(surface, editingTarget), surface)}
+					<h5>${esc(i18n.topPreviewLayer)}</h5>
+					<div class="fpcw-projection-layers fpcw-surface-layers">${surfaceLayerImagePicker(index, 'preview_overlay_image_id', surface.preview_overlay_image_id, i18n.topPreviewLayer)}</div>
 					<h5>${esc(i18n.elementLimits)}</h5>
 					<div class="fpcw-admin-grid fpcw-admin-grid--four">
 						<label class="fpcw-check"><input type="checkbox" data-path="surfaces.${index}.allow_images" ${surface.allow_images ? 'checked' : ''}> ${esc(i18n.images)}</label>
@@ -312,6 +318,11 @@
 			<label class="fpcw-check"><input type="checkbox" data-path="surfaces.${surfaceIndex}.projection.preview_views.${viewIndex}.enabled" ${view.enabled ? 'checked' : ''}> ${esc(i18n.show)}</label>
 			<label>${esc(i18n.angleLabel)}<input data-path="surfaces.${surfaceIndex}.projection.preview_views.${viewIndex}.label" value="${esc(view.label)}" /></label>
 			${numberField(i18n.rotationDegrees, `surfaces.${surfaceIndex}.projection.preview_views.${viewIndex}.rotation`, view.rotation, -180, 180)}
+			<div class="fpcw-preview-angle-images" aria-label="${esc(i18n.angleSpecificImages)}">
+				${previewAngleImagePicker(surfaceIndex, viewIndex, 'mockup_image_id', view.mockup_image_id, i18n.previewMockupImage)}
+				${previewAngleImagePicker(surfaceIndex, viewIndex, 'mask_image_id', view.mask_image_id, i18n.projectionMask)}
+				${previewAngleImagePicker(surfaceIndex, viewIndex, 'overlay_image_id', view.overlay_image_id, i18n.lightingOverlay)}
+			</div>
 		</div>`;
 	}
 
@@ -381,6 +392,22 @@
 			<strong>${esc(label)}</strong><div class="fpcw-image-thumb">${attachmentId ? `<img data-attachment-preview="${attachmentId}" alt="" />` : `<span>${esc(i18n.noImageShort)}</span>`}</div>
 			<div><button type="button" class="button" data-action="choose-projection-image" data-surface="${surfaceIndex}" data-projection-field="${fieldName}">${esc(i18n.choose)}</button>
 			${attachmentId ? `<button type="button" class="button-link-delete" data-action="clear-projection-image" data-surface="${surfaceIndex}" data-projection-field="${fieldName}">${esc(i18n.clear)}</button>` : ''}</div>
+		</div>`;
+	}
+
+	function surfaceLayerImagePicker(surfaceIndex, fieldName, attachmentId, label) {
+		return `<div class="fpcw-image-picker fpcw-projection-image-picker">
+			<strong>${esc(label)}</strong><div class="fpcw-image-thumb">${attachmentId ? `<img data-attachment-preview="${attachmentId}" alt="" />` : `<span>${esc(i18n.noImageShort)}</span>`}</div>
+			<div><button type="button" class="button" data-action="choose-surface-layer-image" data-surface="${surfaceIndex}" data-surface-field="${fieldName}">${esc(i18n.choose)}</button>
+			${attachmentId ? `<button type="button" class="button-link-delete" data-action="clear-surface-layer-image" data-surface="${surfaceIndex}" data-surface-field="${fieldName}">${esc(i18n.clear)}</button>` : ''}</div>
+		</div>`;
+	}
+
+	function previewAngleImagePicker(surfaceIndex, viewIndex, fieldName, attachmentId, label) {
+		return `<div class="fpcw-image-picker fpcw-projection-image-picker">
+			<strong>${esc(label)}</strong><div class="fpcw-image-thumb">${attachmentId ? `<img data-attachment-preview="${attachmentId}" alt="" />` : `<span>${esc(i18n.noImageShort)}</span>`}</div>
+			<div><button type="button" class="button" data-action="choose-preview-view-image" data-surface="${surfaceIndex}" data-view="${viewIndex}" data-view-field="${fieldName}">${esc(i18n.choose)}</button>
+			${attachmentId ? `<button type="button" class="button-link-delete" data-action="clear-preview-view-image" data-surface="${surfaceIndex}" data-view="${viewIndex}" data-view-field="${fieldName}">${esc(i18n.clear)}</button>` : ''}</div>
 		</div>`;
 	}
 
@@ -624,7 +651,7 @@
 		}
 		if (action === 'add-surface') {
 			const id = uniqueId('surface', config.surfaces);
-			config.surfaces.push({ id, label: i18n.newSurface, width: 1000, height: 1000, shape: 'rect', workspace: { x: 250, y: 200, width: 500, height: 600 }, print_area: { width: 2000, height: 800 }, base_image_transform: { x: 0, y: 0, width: 1000, height: 1000 }, projection: { wrap_angle: 180, top_scale: 100, bottom_scale: 100, shading: 45, frame: { x: 250, y: 200, width: 500, height: 600 }, preview_views: defaultPreviewViews(), mask_image_id: 0, overlay_image_id: 0 }, allow_images: true, allow_text: true, max_images: 1, max_texts: 3 });
+			config.surfaces.push({ id, label: i18n.newSurface, width: 1000, height: 1000, shape: 'rect', workspace: { x: 250, y: 200, width: 500, height: 600 }, print_area: { width: 2000, height: 800 }, base_image_transform: { x: 0, y: 0, width: 1000, height: 1000 }, projection: { wrap_angle: 180, top_scale: 100, bottom_scale: 100, shading: 45, frame: { x: 250, y: 200, width: 500, height: 600 }, preview_views: defaultPreviewViews(), mask_image_id: 0, overlay_image_id: 0 }, preview_overlay_image_id: 0, allow_images: true, allow_text: true, max_images: 1, max_texts: 3 });
 			config.colors.forEach((color) => { color.surfaces[id] = { enabled: true, image_id: 0 }; });
 			openSurfaces.clear();
 			openSurfaces.add(config.surfaces.length - 1);
@@ -670,6 +697,19 @@
 			if (item && ['mask_image_id', 'overlay_image_id'].includes(button.dataset.projectionField)) item.projection[button.dataset.projectionField] = 0;
 			render();
 		}
+		if (action === 'choose-surface-layer-image') chooseSurfaceLayerImage(Number(button.dataset.surface), button.dataset.surfaceField);
+		if (action === 'clear-surface-layer-image') {
+			const item = config.surfaces[Number(button.dataset.surface)];
+			if (item && button.dataset.surfaceField === 'preview_overlay_image_id') item.preview_overlay_image_id = 0;
+			render();
+		}
+		if (action === 'choose-preview-view-image') choosePreviewViewImage(Number(button.dataset.surface), Number(button.dataset.view), button.dataset.viewField);
+		if (action === 'clear-preview-view-image') {
+			const item = config.surfaces[Number(button.dataset.surface)];
+			const view = item && item.projection && item.projection.preview_views ? item.projection.preview_views[Number(button.dataset.view)] : null;
+			if (view && ['mockup_image_id', 'mask_image_id', 'overlay_image_id'].includes(button.dataset.viewField)) view[button.dataset.viewField] = 0;
+			render();
+		}
 		if (action === 'preview-attribute') {
 			previewAttributes.set(Number(button.dataset.surface), button.dataset.color);
 			render();
@@ -700,14 +740,38 @@
 
 	function chooseProjectionImage(surfaceIndex, fieldName) {
 		if (!config.surfaces[surfaceIndex] || !['mask_image_id', 'overlay_image_id'].includes(fieldName)) return;
+		chooseLayerAttachment((attachment) => {
+			config.surfaces[surfaceIndex].projection[fieldName] = Number(attachment.id);
+			render();
+		});
+	}
+
+	function chooseSurfaceLayerImage(surfaceIndex, fieldName) {
+		if (!config.surfaces[surfaceIndex] || fieldName !== 'preview_overlay_image_id') return;
+		chooseLayerAttachment((attachment) => {
+			config.surfaces[surfaceIndex][fieldName] = Number(attachment.id);
+			render();
+		});
+	}
+
+	function choosePreviewViewImage(surfaceIndex, viewIndex, fieldName) {
+		const surface = config.surfaces[surfaceIndex];
+		const view = surface && surface.projection && surface.projection.preview_views ? surface.projection.preview_views[viewIndex] : null;
+		if (!view || !['mockup_image_id', 'mask_image_id', 'overlay_image_id'].includes(fieldName)) return;
+		chooseLayerAttachment((attachment) => {
+			view[fieldName] = Number(attachment.id);
+			render();
+		});
+	}
+
+	function chooseLayerAttachment(callback) {
 		const frame = wp.media({ title: window.FPCW_ADMIN.mediaTitle, button: { text: window.FPCW_ADMIN.mediaButton }, library: { type: 'image' }, multiple: false });
 		frame.on('select', () => {
 			const attachment = frame.state().get('selection').first().toJSON();
-			config.surfaces[surfaceIndex].projection[fieldName] = Number(attachment.id);
 			const details = { url: attachment.sizes && attachment.sizes.medium ? attachment.sizes.medium.url : attachment.url, width: Number(attachment.width) || 1, height: Number(attachment.height) || 1 };
 			attachmentCache.set(Number(attachment.id), details);
 			previewCache.set(Number(attachment.id), details.url);
-			render();
+			callback(attachment, details);
 		});
 		frame.open();
 	}

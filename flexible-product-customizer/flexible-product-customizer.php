@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Flexible Product Customizer for WooCommerce
  * Description: Visual product personalization with reusable templates, secure uploads, cart previews, and production files.
- * Version:     1.6.3
+ * Version:     1.6.4
  * Requires at least: 6.5
  * Requires PHP: 7.4
  * Requires Plugins: woocommerce
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'FPCW_VERSION', '1.6.3' );
+define( 'FPCW_VERSION', '1.6.4' );
 define( 'FPCW_FILE', __FILE__ );
 define( 'FPCW_PATH', plugin_dir_path( __FILE__ ) );
 define( 'FPCW_URL', plugin_dir_url( __FILE__ ) );

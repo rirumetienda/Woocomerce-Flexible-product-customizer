@@ -234,7 +234,10 @@ final class Template_Manager {
 					'leftSide' => __( 'Left side', 'flexible-product-customizer' ),
 					'rightSide' => __( 'Right side', 'flexible-product-customizer' ),
 					'projectionMask' => __( 'Projection mask', 'flexible-product-customizer' ),
+					'previewMockupImage' => __( 'Preview mockup image', 'flexible-product-customizer' ),
 					'lightingOverlay' => __( 'Lighting overlay', 'flexible-product-customizer' ),
+					'topPreviewLayer' => __( 'Top preview layer', 'flexible-product-customizer' ),
+					'angleSpecificImages' => __( 'Angle-specific preview images', 'flexible-product-customizer' ),
 					'optionalProjectionLayers' => __( 'Optional projection layers', 'flexible-product-customizer' ),
 				),
 			)
@@ -269,9 +272,18 @@ final class Template_Manager {
 		}
 		unset( $color );
 		foreach ( $config['surfaces'] as &$surface ) {
+			$surface['preview_overlay_image_url'] = ! empty( $surface['preview_overlay_image_id'] ) ? $storage->attachment_url( $surface['preview_overlay_image_id'] ) : '';
 			$projection = isset( $surface['projection'] ) && is_array( $surface['projection'] ) ? $surface['projection'] : array();
 			$projection['mask_image_url'] = ! empty( $projection['mask_image_id'] ) ? $storage->attachment_url( $projection['mask_image_id'] ) : '';
 			$projection['overlay_image_url'] = ! empty( $projection['overlay_image_id'] ) ? $storage->attachment_url( $projection['overlay_image_id'] ) : '';
+			if ( isset( $projection['preview_views'] ) && is_array( $projection['preview_views'] ) ) {
+				foreach ( $projection['preview_views'] as &$view ) {
+					$view['mockup_image_url'] = ! empty( $view['mockup_image_id'] ) ? $storage->attachment_url( $view['mockup_image_id'] ) : '';
+					$view['mask_image_url'] = ! empty( $view['mask_image_id'] ) ? $storage->attachment_url( $view['mask_image_id'] ) : '';
+					$view['overlay_image_url'] = ! empty( $view['overlay_image_id'] ) ? $storage->attachment_url( $view['overlay_image_id'] ) : '';
+				}
+				unset( $view );
+			}
 			$surface['projection'] = $projection;
 		}
 		unset( $surface );
@@ -547,6 +559,7 @@ final class Template_Manager {
 				'print_area'     => $print_area,
 				'base_image_transform' => $base_transform,
 				'projection'     => $this->sanitize_projection( isset( $surface['projection'] ) && is_array( $surface['projection'] ) ? $surface['projection'] : array(), $canvas_width, $canvas_height, $projection_defaults ),
+				'preview_overlay_image_id' => absint( isset( $surface['preview_overlay_image_id'] ) ? $surface['preview_overlay_image_id'] : 0 ),
 				'allow_images'   => ! empty( $surface['allow_images'] ),
 				'allow_text'     => ! empty( $surface['allow_text'] ),
 				'max_images'     => $this->integer_between( isset( $surface['max_images'] ) ? $surface['max_images'] : 1, 0, 20 ),
@@ -562,6 +575,7 @@ final class Template_Manager {
 					'print_area' => array( 'width' => 1000, 'height' => 1000 ),
 					'base_image_transform' => array( 'x' => 0, 'y' => 0, 'width' => 1000, 'height' => 1000 ),
 					'projection' => $this->sanitize_projection( array(), 1000, 1000, array( 'x' => 250, 'y' => 200, 'width' => 500, 'height' => 600 ) ),
+					'preview_overlay_image_id' => 0,
 					'allow_images' => true, 'allow_text' => true, 'max_images' => 1, 'max_texts' => 3,
 				),
 			);
@@ -627,6 +641,7 @@ final class Template_Manager {
 							'preview_views' => $this->default_preview_views(),
 							'mask_image_id' => absint( $image_id ), 'overlay_image_id' => 0,
 						),
+						'preview_overlay_image_id' => 0,
 						'allow_images' => true, 'allow_text' => true, 'max_images' => 4, 'max_texts' => 6,
 					),
 				),
@@ -654,6 +669,7 @@ final class Template_Manager {
 					'print_area' => array( 'width' => 1000, 'height' => 1000 ),
 					'base_image_transform' => array( 'x' => 0, 'y' => 0, 'width' => 1000, 'height' => 1000 ),
 					'projection' => $this->sanitize_projection( array(), 1000, 1000, array( 'x' => 250, 'y' => 200, 'width' => 500, 'height' => 600 ) ),
+					'preview_overlay_image_id' => 0,
 					'allow_images' => true, 'allow_text' => true,
 					'max_images' => 1, 'max_texts' => 3,
 				),
@@ -742,6 +758,9 @@ final class Template_Manager {
 				'label'    => sanitize_text_field( isset( $view['label'] ) ? $view['label'] : $id ),
 				'rotation' => max( -180, min( 180, (int) round( isset( $view['rotation'] ) ? (float) $view['rotation'] : 0 ) ) ),
 				'enabled'  => ! isset( $view['enabled'] ) || ! empty( $view['enabled'] ),
+				'mockup_image_id' => absint( isset( $view['mockup_image_id'] ) ? $view['mockup_image_id'] : 0 ),
+				'mask_image_id' => absint( isset( $view['mask_image_id'] ) ? $view['mask_image_id'] : 0 ),
+				'overlay_image_id' => absint( isset( $view['overlay_image_id'] ) ? $view['overlay_image_id'] : 0 ),
 			);
 		}
 		return $clean ? $clean : $this->default_preview_views();
