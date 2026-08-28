@@ -8,6 +8,7 @@ const domain = 'flexible-product-customizer';
 const es = {
 	'A design image is no longer available.': 'Una imagen del diseño ya no está disponible.',
 	'Add another customization': 'Añadir otra personalización',
+	'Add this customization to the cart before starting another one.': 'Añade esta personalización al carrito antes de iniciar otra.',
 	'Add an image or text before saving the customization.': 'Añade una imagen o texto antes de guardar la personalización.',
 	'Add selected fonts': 'Añadir fuentes seleccionadas',
 	'A price increment is charged only when the customer adds content to that surface. Use zero for the base surface.': 'El incremento de precio se cobra únicamente cuando el cliente añade contenido a esa superficie. Usa cero para la superficie base.',
@@ -46,6 +47,7 @@ const es = {
 	'Clear': 'Limpiar',
 	'Close': 'Cerrar',
 	'Close editor': 'Cerrar editor',
+	'Close the other open customization editor on this device before continuing.': 'Cierra el otro editor de personalización abierto en este dispositivo antes de continuar.',
 	'Color': 'Color',
 	'Color attributes': 'Atributos de color',
 	'Circle': 'Circulo',
@@ -247,7 +249,7 @@ const es = {
 	'You are not allowed to edit this template.': 'No tienes permiso para editar esta plantilla.',
 	'You cannot modify this customization.': 'No puedes modificar esta personalización.',
 	'You have too many open customizations. Wait for old sessions to expire or complete an existing design.': 'Tienes demasiadas personalizaciones abiertas. Espera a que caduquen las sesiones anteriores o termina un diseño existente.',
-	'<p>When customers customize a product, the store temporarily saves uploaded images, entered text, generated previews, product identifiers, and an anonymous browser ownership token. Unordered customization data expires seven days after creation. When an order is created, these files and design data are retained with the order according to the store retention policy.</p>': '<p>Cuando los clientes personalizan un producto, la tienda guarda temporalmente las imágenes subidas, el texto introducido, las vistas previas generadas, los identificadores del producto y un token anónimo de propiedad del navegador. Los datos de personalizaciones sin pedido caducan siete días después de su creación. Cuando se crea un pedido, estos archivos y los datos del diseño se conservan con el pedido según la política de retención de la tienda.</p>',
+	'<p>When customers customize a product, the store temporarily saves uploaded images, entered text, generated previews, product identifiers, and an anonymous browser ownership token. Draft customization data that is not added to the cart expires after one hour of inactivity. Once added to the cart, unordered customization data expires seven days later. When an order is created, these files and design data are retained with the order according to the store retention policy.</p>': '<p>Cuando los clientes personalizan un producto, la tienda guarda temporalmente las imágenes subidas, el texto introducido, las vistas previas generadas, los identificadores del producto y un token anónimo de propiedad del navegador. Los borradores que no se agregan al carrito caducan después de una hora de inactividad. Una vez agregados al carrito, los datos de personalizaciones sin pedido caducan siete días después. Cuando se crea un pedido, estos archivos y los datos del diseño se conservan con el pedido según la política de retención de la tienda.</p>',
 };
 
 function phpFiles(directory) {
@@ -278,7 +280,7 @@ function poEscape(value) {
 
 function buildPo(messages) {
 	const header = [
-		'Project-Id-Version: Flexible Product Customizer 1.6.4',
+		'Project-Id-Version: Flexible Product Customizer 1.6.5',
 		'Language: es_ES',
 		'MIME-Version: 1.0',
 		'Content-Type: text/plain; charset=UTF-8',
@@ -292,7 +294,7 @@ function buildPo(messages) {
 
 function buildMo(messages) {
 	const header = [
-		'Project-Id-Version: Flexible Product Customizer 1.6.4',
+		'Project-Id-Version: Flexible Product Customizer 1.6.5',
 		'Language: es_ES',
 		'MIME-Version: 1.0',
 		'Content-Type: text/plain; charset=UTF-8',

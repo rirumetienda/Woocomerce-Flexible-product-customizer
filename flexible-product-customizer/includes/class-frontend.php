@@ -110,6 +110,8 @@ final class Frontend {
 					'extra'         => __( 'extra', 'flexible-product-customizer' ),
 					'expires'       => __( 'Available in your cart until %s. After that date the design and files are deleted automatically.', 'flexible-product-customizer' ),
 					'customizationRequired' => __( 'Save your customization to enable adding this product to the cart.', 'flexible-product-customizer' ),
+					'editorAlreadyOpen' => __( 'Close the other open customization editor on this device before continuing.', 'flexible-product-customizer' ),
+					'addAnotherUnavailable' => __( 'Add this customization to the cart before starting another one.', 'flexible-product-customizer' ),
 					'variationChanged' => __( 'Save the customization again for the selected variation.', 'flexible-product-customizer' ),
 					'emptyDesign' => __( 'Add an image or text before saving the customization.', 'flexible-product-customizer' ),
 					'editView' => __( 'Edit', 'flexible-product-customizer' ),

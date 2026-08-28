@@ -89,7 +89,7 @@ final class Plugin {
 		wp_add_privacy_policy_content(
 			__( 'Flexible Product Customizer', 'flexible-product-customizer' ),
 			wp_kses_post(
-				__( '<p>When customers customize a product, the store temporarily saves uploaded images, entered text, generated previews, product identifiers, and an anonymous browser ownership token. Unordered customization data expires seven days after creation. When an order is created, these files and design data are retained with the order according to the store retention policy.</p>', 'flexible-product-customizer' )
+				__( '<p>When customers customize a product, the store temporarily saves uploaded images, entered text, generated previews, product identifiers, and an anonymous browser ownership token. Draft customization data that is not added to the cart expires after one hour of inactivity. Once added to the cart, unordered customization data expires seven days later. When an order is created, these files and design data are retained with the order according to the store retention policy.</p>', 'flexible-product-customizer' )
 			)
 		);
 	}

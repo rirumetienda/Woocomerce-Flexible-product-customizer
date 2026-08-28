@@ -2,7 +2,7 @@ const fs = require('fs');
 const { JSDOM } = require('jsdom');
 
 const html = `<!doctype html><html><body>
-<form class="cart"><input name="variation_id" value="456"><button type="button" id="fpcw-open-editor"></button><input id="fpcw-token"><div id="fpcw-saved-summary" hidden></div><button class="single_add_to_cart_button" type="submit">Cart</button><section id="fpcw-product-previews" hidden><div id="fpcw-product-preview-list"></div></section></form>
+<form class="cart"><input name="variation_id" value="456"><button type="button" id="fpcw-open-editor"></button><input id="fpcw-token"><div id="fpcw-saved-summary" hidden></div><button type="button" id="fpcw-add-another" hidden></button><button class="single_add_to_cart_button" type="submit">Cart</button><section id="fpcw-product-previews" hidden><div id="fpcw-product-preview-list"></div></section></form>
 <section id="product-module"><dialog id="fpcw-editor-modal"><button data-fpcw-close></button>
 <div id="fpcw-color-control"></div><div id="fpcw-surface-tabs"></div><div id="fpcw-surface-overview"></div>
 <div id="fpcw-view-modes" hidden><button id="fpcw-view-edit"></button><button id="fpcw-view-wrapped"></button></div>
@@ -79,7 +79,7 @@ window.FPCW_EDITOR = {
 	i18n: {
 		chooseOptions: 'Choose options', uploadError: 'Upload error', saveError: 'Save error', imageLimit: 'Image limit',
 		textLimit: 'Text limit', confirmRemove: 'Remove?', saving: 'Saving', saved: 'Ready', expires: 'Expires %s',
-		cartColorLocked: 'Color locked', customizationRequired: 'Customize first', variationChanged: 'Save variation', emptyDesign: 'Empty design',
+		cartColorLocked: 'Color locked', customizationRequired: 'Customize first', editorAlreadyOpen: 'Other editor open', addAnotherUnavailable: 'Add to cart first', variationChanged: 'Save variation', emptyDesign: 'Empty design',
 		color: 'Color', imageLoadError: 'Image load error', fileRules: 'File rules', dimensionRules: 'Dimension rules', exportError: 'Export error',
 		editView: 'Edit', wrappedPreview: 'Wrapped', previewUnavailable: 'Unavailable', frontView: 'Front', leftSide: 'Left', rightSide: 'Right',
 	},
@@ -107,6 +107,11 @@ if (configuration.surfaces[0].preview_overlay_image_url !== '' || configuration.
 if (!window.document.querySelector('.single_add_to_cart_button').disabled) throw new Error('Add to cart must start disabled.');
 
 (async () => {
+	window.localStorage.setItem('fpcw_editor_lock', JSON.stringify({ id: 'other-editor', expires: Date.now() + 60000 }));
+	await window.FlexibleProductCustomizer.open();
+	if (calls.length !== 0) throw new Error('A locked editor should not create a server session.');
+	if (!window.document.getElementById('fpcw-saved-summary').textContent.includes('Other editor open')) throw new Error('The same-device editor lock warning was not shown.');
+	window.localStorage.removeItem('fpcw_editor_lock');
 	await window.FlexibleProductCustomizer.open();
 	const modal = window.document.getElementById('fpcw-editor-modal');
 	if (modal.parentElement !== window.document.body) throw new Error('Editor was not mounted at the document root.');
@@ -148,6 +153,8 @@ if (!window.document.querySelector('.single_add_to_cart_button').disabled) throw
 	if (window.document.getElementById('fpcw-token').value !== 'a'.repeat(64)) throw new Error('Saved token was not attached to the cart form.');
 	if (window.document.querySelector('.single_add_to_cart_button').disabled) throw new Error('Add to cart was not enabled after saving.');
 	if (window.document.getElementById('fpcw-product-previews').hidden) throw new Error('Saved previews were not shown below add to cart.');
+	const addAnother = window.document.getElementById('fpcw-add-another');
+	if (addAnother.hidden || !addAnother.disabled) throw new Error('Add another customization must stay visible but disabled until the item is in the cart.');
 	const variation = window.document.querySelector('[name="variation_id"]');
 	variation.value = '789';
 	variation.dispatchEvent(new window.Event('change', { bubbles: true }));

@@ -4,11 +4,11 @@ Tags: woocommerce, product customizer, personalization, print, webview
 Requires at least: 6.5
 Requires PHP: 7.4
 WC requires at least: 9.6
-Stable tag: 1.6.4
+Stable tag: 1.6.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Visual product customization with reusable templates, secure uploads, cart previews, production PNG files, and seven-day temporary retention.
+Visual product customization with reusable templates, secure uploads, cart previews, production PNG files, and temporary retention for drafts and carts.
 
 == Description ==
 
@@ -16,7 +16,7 @@ Flexible Product Customizer adds a visual editor to selected WooCommerce product
 
 Customers can upload PNG, JPEG, or WebP images, add styled text, move and scale elements, rotate in 90-degree steps, and preview every surface. Cylindrical templates add a live wrapped preview while preserving a flat production file. Circular surfaces clip designs to round bounds for products like buttons, clocks, and round mousepads. Saved designs appear in the cart and order. Store managers can download original uploads and transparent production PNG files from the order.
 
-Temporary customizations expire exactly seven days after creation. An hourly cleanup removes expired files and data. Completed orders are permanent and never enter that cleanup flow.
+Draft customizations that are not added to the cart expire after one hour of inactivity. Cart customizations expire seven days after they are added to the cart. An hourly, bounded cleanup removes expired temporary files and data. Completed orders are permanent and never enter that cleanup flow.
 
 The plugin declares HPOS and Cart/Checkout Blocks compatibility and includes REST plus WebView integration points for mobile clients.
 
@@ -35,15 +35,21 @@ All plugin interfaces and customer messages are available in English and Spanish
 
 PNG, JPEG, and WebP. PNG is recommended for transparency and print quality. Files are limited to 10 MB and 10,000 x 10,000 pixels.
 
-= What happens after seven days? =
+= What happens when a customization expires? =
 
-Unordered session files and data are deleted automatically. A stale cart line is removed the next time that cart loads. The exact expiration date is shown after saving and in the cart.
+Draft sessions that are not added to the cart expire after one hour of inactivity. Cart customizations expire after seven days. Expired files and data are deleted automatically, and a stale cart line is removed the next time that cart loads. The exact expiration date is shown after saving and in the cart.
 
 = Are order files deleted? =
 
 No. Creating an order permanently claims the customization and disables its expiration.
 
 == Changelog ==
+
+= 1.6.5 =
+* Limits non-cart draft and active customization sessions to one hour of inactivity.
+* Extends retention to seven days only after WooCommerce adds the customization to the cart.
+* Reuses empty drafts, ignores inactive sessions in quota checks, and blocks multiple editors on the same device.
+* Keeps the cleanup routine hourly and bounded while deleting expired sessions immediately when REST/cart touches them.
 
 = 1.6.4 =
 * Adds angle-specific cylindrical mockup images for front/side previews.

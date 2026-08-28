@@ -24,6 +24,8 @@
 		ready: false,
 		busy: false,
 		inCart: false,
+		forceFresh: false,
+		editorLockId: 'fpcw-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8),
 	};
 
 	const dom = {};
@@ -34,6 +36,10 @@
 	let projectionRenderer = null;
 	let projectionUnavailable = false;
 	let initialized = false;
+	const EDITOR_LOCK_KEY = 'fpcw_editor_lock';
+	const EDITOR_LOCK_TTL = 2 * 60 * 1000;
+	let editorStorageAvailable = null;
+	let editorLockTimer = 0;
 
 	function el(id) { return document.getElementById(id); }
 	function normalizeConfig(input) {
@@ -262,6 +268,7 @@
 		}
 		configureCanvas();
 		updateCartButton();
+		updateAddAnotherButton();
 		mobileEvent('ready', { product_id: boot.productId });
 		return true;
 	}
@@ -320,11 +327,19 @@
 		}
 		window.addEventListener('message', receiveBridgeMessage);
 		window.addEventListener('resize', positionSelectionTools);
+		window.addEventListener('pagehide', releaseEditorLock);
+		window.addEventListener('beforeunload', releaseEditorLock);
 		document.addEventListener('change', (event) => {
 			if (event.target.matches('form.variations_form select, form.cart input[name="variation_id"]')) window.setTimeout(updateCartButton, 0);
 		});
 		if (window.jQuery && dom.cartForm) {
 			window.jQuery(dom.cartForm).on('found_variation reset_data hide_variation', () => window.setTimeout(updateCartButton, 0));
+			window.jQuery(document.body).on('added_to_cart', () => {
+				if (!dom.token || !dom.token.value) return;
+				api('/sessions/' + dom.token.value, { method: 'GET' })
+					.then((response) => { hydrateSession(response); updateCartButton(); })
+					.catch(() => { state.inCart = true; updateAddAnotherButton(); });
+			});
 		}
 		if (dom.cartForm) {
 			dom.cartForm.addEventListener('submit', preventIncompleteCart, true);
@@ -533,6 +548,13 @@
 			dom.summary.textContent = boot.i18n.chooseOptions;
 			return;
 		}
+		if (!acquireEditorLock()) {
+			dom.summary.hidden = false;
+			dom.summary.classList.add('is-error');
+			dom.summary.textContent = boot.i18n.editorAlreadyOpen;
+			announce(boot.i18n.editorAlreadyOpen, true);
+			return;
+		}
 		showModalLayer();
 		document.documentElement.classList.add('fpcw-modal-open');
 		document.body.classList.add('fpcw-modal-open');
@@ -540,9 +562,15 @@
 		announce('');
 		try {
 			if (!state.ready) {
-				const response = state.token
-					? await api('/sessions/' + state.token, { method: 'GET' })
-					: await api('/sessions', { method: 'POST', body: JSON.stringify({ product_id: boot.productId, variation_id: currentVariation }) });
+				let response;
+				if (state.token) {
+					response = await api('/sessions/' + state.token, { method: 'GET' });
+				} else {
+					const payload = { product_id: boot.productId, variation_id: currentVariation };
+					if (state.forceFresh) payload.fresh = true;
+					response = await api('/sessions', { method: 'POST', body: JSON.stringify(payload) });
+					state.forceFresh = false;
+				}
 				hydrateSession(response);
 			}
 			await ensureSceneImages();
@@ -563,6 +591,7 @@
 		hideModalLayer();
 		document.documentElement.classList.remove('fpcw-modal-open');
 		document.body.classList.remove('fpcw-modal-open');
+		releaseEditorLock();
 		const launcher = el('fpcw-open-editor');
 		if (launcher) window.setTimeout(() => launcher.focus(), 0);
 		mobileEvent('closed', { token: state.token });
@@ -570,6 +599,66 @@
 
 	function isModalOpen() {
 		return Boolean(dom.modal && (dom.modal.open || dom.modal.hasAttribute('open')));
+	}
+
+	function canUseEditorStorage() {
+		if (editorStorageAvailable !== null) return editorStorageAvailable;
+		try {
+			const testKey = EDITOR_LOCK_KEY + '_test';
+			window.localStorage.setItem(testKey, '1');
+			window.localStorage.removeItem(testKey);
+			editorStorageAvailable = true;
+		} catch (error) {
+			editorStorageAvailable = false;
+		}
+		return editorStorageAvailable;
+	}
+
+	function readEditorLock() {
+		if (!canUseEditorStorage()) return null;
+		try {
+			const raw = window.localStorage.getItem(EDITOR_LOCK_KEY);
+			return raw ? JSON.parse(raw) : null;
+		} catch (error) {
+			return null;
+		}
+	}
+
+	function activeForeignEditorLock(lock) {
+		return Boolean(lock && lock.id && lock.id !== state.editorLockId && Number(lock.expires || 0) > Date.now());
+	}
+
+	function writeEditorLock() {
+		if (!canUseEditorStorage()) return;
+		try {
+			window.localStorage.setItem(EDITOR_LOCK_KEY, JSON.stringify({
+				id: state.editorLockId,
+				product_id: boot.productId,
+				variation_id: variationId() || state.variationId || 0,
+				expires: Date.now() + EDITOR_LOCK_TTL,
+			}));
+		} catch (error) {}
+	}
+
+	function acquireEditorLock() {
+		if (!canUseEditorStorage()) return true;
+		if (activeForeignEditorLock(readEditorLock())) return false;
+		writeEditorLock();
+		if (editorLockTimer) window.clearInterval(editorLockTimer);
+		editorLockTimer = window.setInterval(writeEditorLock, Math.max(15000, Math.floor(EDITOR_LOCK_TTL / 3)));
+		if (editorLockTimer && typeof editorLockTimer.unref === 'function') editorLockTimer.unref();
+		return true;
+	}
+
+	function releaseEditorLock() {
+		if (editorLockTimer) {
+			window.clearInterval(editorLockTimer);
+			editorLockTimer = 0;
+		}
+		if (!canUseEditorStorage()) return;
+		const lock = readEditorLock();
+		if (!lock || lock.id !== state.editorLockId) return;
+		try { window.localStorage.removeItem(EDITOR_LOCK_KEY); } catch (error) {}
 	}
 
 	function showModalLayer() {
@@ -619,20 +708,23 @@
 		state.uploads.clear();
 		(response.payload.uploads || []).forEach((file) => state.uploads.set(file.id, file));
 		dom.expiry.textContent = boot.i18n.expires.replace('%s', response.expires_display);
-		if (response.status === 'active') markSaved(response);
+		if (response.status === 'active' || response.status === 'cart') markSaved(response);
+		else updateAddAnotherButton();
 		installFontFaces();
 		renderStaticControls();
 	}
 
 	function markSaved(response) {
+		state.inCart = response.status === 'cart';
 		dom.token.value = response.token;
 		dom.summary.hidden = false;
 		dom.summary.classList.remove('is-error');
 		dom.summary.textContent = boot.i18n.saved + '. ' + boot.i18n.expires.replace('%s', response.expires_display);
-		if (dom.addAnother) dom.addAnother.hidden = false;
+		updateAddAnotherButton();
 		renderSavedPreviews(response.payload.previews || []);
 		updateLiveSurfaceExtras();
 		updateCartButton();
+		updateAddAnotherButton();
 	}
 
 	function setSurface(id) {
@@ -778,6 +870,7 @@
 	}
 
 	function updateCartButton() {
+		updateAddAnotherButton();
 		if (!dom.cartForm) return;
 		dom.cartButton = dom.cartForm.querySelector('.single_add_to_cart_button');
 		if (!dom.cartButton) return;
@@ -795,6 +888,18 @@
 			dom.summary.classList.add('is-error');
 			dom.summary.textContent = boot.i18n.variationChanged;
 		}
+		updateAddAnotherButton();
+	}
+
+	function updateAddAnotherButton() {
+		if (!dom.addAnother) return;
+		const hasSaved = Boolean(dom.token && dom.token.value);
+		const enabled = hasSaved && state.inCart;
+		dom.addAnother.hidden = !hasSaved;
+		dom.addAnother.disabled = !enabled;
+		dom.addAnother.classList.toggle('disabled', !enabled);
+		dom.addAnother.setAttribute('aria-disabled', String(!enabled));
+		dom.addAnother.title = enabled ? '' : (boot.i18n.addAnotherUnavailable || boot.i18n.customizationRequired);
 	}
 
 	function preventIncompleteCart(event) {
@@ -1637,7 +1742,8 @@
 	}
 
 	function addAnotherCustomization() {
-		if (state.busy) return;
+		if (state.busy || !dom.addAnother || dom.addAnother.disabled) return;
+		state.forceFresh = true;
 		state.token = '';
 		state.expiresDisplay = '';
 		state.variationId = variationId() || 0;
@@ -1652,13 +1758,14 @@
 		if (dom.token) dom.token.value = '';
 		if (dom.productPreviewList) dom.productPreviewList.innerHTML = '';
 		if (dom.productPreviews) dom.productPreviews.hidden = true;
-		if (dom.addAnother) dom.addAnother.hidden = true;
+		updateAddAnotherButton();
 		dom.summary.hidden = false;
 		dom.summary.classList.add('is-error');
 		dom.summary.textContent = boot.i18n.customizationRequired;
 		renderSurfaceOverview();
 		updateLiveSurfaceExtras();
 		updateCartButton();
+		updateAddAnotherButton();
 		open();
 	}
 

@@ -127,7 +127,17 @@ final class Rest_Controller {
 		if ( ! $this->valid_variation( $product_id, $variation_id ) ) {
 			return new \WP_Error( 'fpcw_invalid_variation', __( 'Choose valid product options before opening the editor.', 'flexible-product-customizer' ), array( 'status' => 400 ) );
 		}
-		if ( $this->repository->count_open_for_current_owner() >= 20 ) {
+		$fresh   = rest_sanitize_boolean( $request->get_param( 'fresh' ) );
+		$reusable = $fresh ? null : $this->repository->find_reusable_empty_draft_for_current_owner( $product_id, $variation_id, $config['template_id'] );
+		$this->repository->delete_empty_drafts_for_current_owner( $reusable ? $reusable['token'] : '' );
+		if ( $reusable ) {
+			$this->repository->update( $reusable['token'], array( 'variation_id' => $variation_id, 'payload' => $this->initial_session_payload( $config ), 'expires_at' => $this->repository->expiration_after( Repository::DRAFT_TTL ) ) );
+			$reusable = $this->repository->find( $reusable['token'] );
+			return rest_ensure_response( $this->session_response( $reusable ) );
+		}
+
+		$open_session_limit = max( 1, absint( apply_filters( 'fpcw_open_session_limit', 20 ) ) );
+		if ( $this->repository->count_open_for_current_owner() >= $open_session_limit ) {
 			return new \WP_Error( 'fpcw_session_limit', __( 'You have too many open customizations. Wait for old sessions to expire or complete an existing design.', 'flexible-product-customizer' ), array( 'status' => 429 ) );
 		}
 
@@ -136,21 +146,26 @@ final class Rest_Controller {
 				'product_id'   => $product_id,
 				'variation_id' => $variation_id,
 				'template_id'  => $config['template_id'],
-				'payload'      => array(
-					'schema_version'   => 1,
-					'template_name'    => $config['template_name'],
-					'template_snapshot'=> $config,
-					'uploads'          => array(),
-					'previews'         => array(),
-					'production_files' => array(),
-					'design'           => array(),
-				),
+				'payload'      => $this->initial_session_payload( $config ),
 			)
 		);
 		if ( is_wp_error( $session ) ) {
 			return $session;
 		}
 		return rest_ensure_response( $this->session_response( $session ) );
+	}
+
+	/** @param array $config Product template config. @return array */
+	private function initial_session_payload( array $config ) {
+		return array(
+			'schema_version'   => 1,
+			'template_name'    => $config['template_name'],
+			'template_snapshot'=> $config,
+			'uploads'          => array(),
+			'previews'         => array(),
+			'production_files' => array(),
+			'design'           => array(),
+		);
 	}
 
 	/** @param \WP_REST_Request $request Request. @return \WP_REST_Response */
@@ -184,7 +199,7 @@ final class Rest_Controller {
 		unset( $stored['url'] );
 		$payload              = $session['payload'];
 		$payload['uploads'][] = $stored;
-		if ( ! $this->repository->update( $session['token'], array( 'payload' => $payload ) ) ) {
+		if ( ! $this->repository->update( $session['token'], $this->session_update_values( $session, array( 'payload' => $payload ) ) ) ) {
 			$this->storage->delete_file_records( array( $stored ) );
 			return new \WP_Error( 'fpcw_database_error', __( 'The uploaded image could not be attached to the customization.', 'flexible-product-customizer' ), array( 'status' => 500 ) );
 		}
@@ -231,7 +246,7 @@ final class Rest_Controller {
 		$records[] = $stored;
 		$payload   = $session['payload'];
 		$payload[ $collection ] = $records;
-		if ( ! $this->repository->update( $session['token'], array( 'payload' => $payload ) ) ) {
+		if ( ! $this->repository->update( $session['token'], $this->session_update_values( $session, array( 'payload' => $payload ) ) ) ) {
 			return new \WP_Error( 'fpcw_database_error', __( 'The generated image could not be attached to the customization.', 'flexible-product-customizer' ), array( 'status' => 500 ) );
 		}
 		return rest_ensure_response( array( 'file' => $file ) );
@@ -324,15 +339,34 @@ final class Rest_Controller {
 		}
 		$payload['uploads']          = $this->storage->prune_uploads( isset( $payload['uploads'] ) ? $payload['uploads'] : array(), $used_ids );
 		$payload['design']           = $validated;
-		$updated = $this->repository->update(
+		$next_status = 'cart' === $session['status'] ? 'cart' : 'active';
+		$updated     = $this->repository->update(
 			$session['token'],
-			array( 'payload' => $payload, 'variation_id' => $variation_id, 'status' => 'cart' === $session['status'] ? 'cart' : 'active' )
+			$this->session_update_values(
+				$session,
+				array( 'payload' => $payload, 'variation_id' => $variation_id, 'status' => $next_status ),
+				$next_status
+			)
 		);
 		if ( ! $updated ) {
 			return new \WP_Error( 'fpcw_database_error', __( 'The customization could not be saved. Please try again.', 'flexible-product-customizer' ), array( 'status' => 500 ) );
 		}
 
 		return rest_ensure_response( $this->session_response( $this->repository->find( $session['token'] ) ) );
+	}
+
+	/**
+	 * Add the correct retention window to a session update.
+	 *
+	 * @param array  $session Session record.
+	 * @param array  $values Update values.
+	 * @param string $next_status Optional status after update.
+	 * @return array
+	 */
+	private function session_update_values( array $session, array $values, $next_status = '' ) {
+		$status = $next_status ? $next_status : ( isset( $values['status'] ) ? $values['status'] : $session['status'] );
+		$values['expires_at'] = $this->repository->expiration_after( 'cart' === $status ? Repository::CART_TTL : Repository::DRAFT_TTL );
+		return $values;
 	}
 
 	/** @param array $record Preview file record. @return string */
@@ -399,6 +433,8 @@ final class Rest_Controller {
 			return new \WP_Error( 'fpcw_session_missing', __( 'The customization session no longer exists.', 'flexible-product-customizer' ), array( 'status' => 404 ) );
 		}
 		if ( $this->repository->is_expired( $session ) ) {
+			$this->storage->delete_temporary_session( $session['token'] );
+			$this->repository->delete( $session['token'] );
 			return new \WP_Error( 'fpcw_session_expired', __( 'This customization has expired. Please create a new one.', 'flexible-product-customizer' ), array( 'status' => 410 ) );
 		}
 		if ( 'ordered' === $session['status'] || ! Session_Identity::owns( $session ) ) {

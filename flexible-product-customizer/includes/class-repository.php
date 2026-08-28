@@ -10,6 +10,9 @@ namespace FPCW;
 defined( 'ABSPATH' ) || exit;
 
 final class Repository {
+	const DRAFT_TTL = HOUR_IN_SECONDS;
+	const CART_TTL  = 7 * DAY_IN_SECONDS;
+
 	/** @var \wpdb */
 	private $wpdb;
 
@@ -35,8 +38,9 @@ final class Repository {
 		} catch ( \Exception $exception ) {
 			$token = hash( 'sha256', wp_generate_uuid4() . wp_rand() . microtime( true ) );
 		}
-		$payload = isset( $data['payload'] ) && is_array( $data['payload'] ) ? $data['payload'] : array();
-		$insert  = array(
+		$payload    = isset( $data['payload'] ) && is_array( $data['payload'] ) ? $data['payload'] : array();
+		$expires_in = isset( $data['expires_in'] ) ? absint( $data['expires_in'] ) : self::DRAFT_TTL;
+		$insert     = array(
 			'token'        => $token,
 			'owner_key'    => Session_Identity::owner_hash(),
 			'user_id'      => get_current_user_id(),
@@ -45,7 +49,7 @@ final class Repository {
 			'template_id'  => absint( $data['template_id'] ),
 			'status'       => 'draft',
 			'payload'      => wp_json_encode( $payload, JSON_UNESCAPED_SLASHES ),
-			'expires_at'   => gmdate( 'Y-m-d H:i:s', $now + ( 7 * DAY_IN_SECONDS ) ),
+			'expires_at'   => $this->expiration_after( $expires_in ),
 			'order_id'     => 0,
 			'created_at'   => gmdate( 'Y-m-d H:i:s', $now ),
 			'updated_at'   => gmdate( 'Y-m-d H:i:s', $now ),
@@ -150,10 +154,13 @@ final class Repository {
 	 */
 	public function find_expired( $limit = 100 ) {
 		$limit = max( 1, min( 500, absint( $limit ) ) );
-		$rows  = $this->wpdb->get_results(
+		$now           = gmdate( 'Y-m-d H:i:s' );
+		$active_cutoff = gmdate( 'Y-m-d H:i:s', time() - self::DRAFT_TTL );
+		$rows          = $this->wpdb->get_results(
 			$this->wpdb->prepare(
-				"SELECT * FROM {$this->table} WHERE status <> 'ordered' AND expires_at IS NOT NULL AND expires_at <= %s ORDER BY id ASC LIMIT %d",
-				gmdate( 'Y-m-d H:i:s' ),
+				"SELECT * FROM {$this->table} WHERE status <> 'ordered' AND ( ( expires_at IS NOT NULL AND expires_at <= %s ) OR ( status <> 'cart' AND updated_at <= %s ) ) ORDER BY id ASC LIMIT %d",
+				$now,
+				$active_cutoff,
 				$limit
 			),
 			ARRAY_A
@@ -168,6 +175,70 @@ final class Repository {
 	}
 
 	/**
+	 * Find a recent empty draft for the same owner and product context.
+	 *
+	 * Empty drafts are safe to reuse because they do not contain uploads, previews, production files, or saved objects.
+	 *
+	 * @param int $product_id Product ID.
+	 * @param int $variation_id Variation ID.
+	 * @param int $template_id Template ID.
+	 * @param int $max_age Maximum age in seconds.
+	 * @return array|null
+	 */
+	public function find_reusable_empty_draft_for_current_owner( $product_id, $variation_id, $template_id, $max_age = HOUR_IN_SECONDS ) {
+		$rows = $this->wpdb->get_results(
+			$this->wpdb->prepare(
+				"SELECT token,payload FROM {$this->table} WHERE owner_key = %s AND product_id = %d AND variation_id = %d AND template_id = %d AND status = 'draft' AND expires_at > %s AND updated_at >= %s ORDER BY updated_at DESC, id DESC LIMIT 5",
+				Session_Identity::owner_hash(),
+				absint( $product_id ),
+				absint( $variation_id ),
+				absint( $template_id ),
+				gmdate( 'Y-m-d H:i:s' ),
+				gmdate( 'Y-m-d H:i:s', time() - max( 60, absint( $max_age ) ) )
+			),
+			ARRAY_A
+		);
+
+		foreach ( $rows as $row ) {
+			$payload = json_decode( isset( $row['payload'] ) ? $row['payload'] : '', true );
+			if ( is_array( $payload ) && ! $this->payload_has_customer_data( $payload ) ) {
+				return $this->find( $row['token'] );
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Delete empty draft sessions for the current owner before enforcing the open-session quota.
+	 *
+	 * @param string $keep_token Optional token to preserve.
+	 * @param int    $limit Maximum rows to inspect.
+	 * @return int Deleted row count.
+	 */
+	public function delete_empty_drafts_for_current_owner( $keep_token = '', $limit = 200 ) {
+		$keep_token = $this->sanitize_token( $keep_token );
+		$rows       = $this->wpdb->get_results(
+			$this->wpdb->prepare(
+				"SELECT token,payload FROM {$this->table} WHERE owner_key = %s AND status = 'draft' AND token <> %s ORDER BY id ASC LIMIT %d",
+				Session_Identity::owner_hash(),
+				$keep_token,
+				max( 1, min( 500, absint( $limit ) ) )
+			),
+			ARRAY_A
+		);
+		$deleted = 0;
+		foreach ( $rows as $row ) {
+			$payload = json_decode( isset( $row['payload'] ) ? $row['payload'] : '', true );
+			if ( ! is_array( $payload ) || ! $this->payload_has_customer_data( $payload ) ) {
+				if ( $this->delete( $row['token'] ) ) {
+					++$deleted;
+				}
+			}
+		}
+		return $deleted;
+	}
+
+	/**
 	 * Count open sessions for the current anonymous or authenticated owner.
 	 *
 	 * @return int
@@ -175,9 +246,10 @@ final class Repository {
 	public function count_open_for_current_owner() {
 		return (int) $this->wpdb->get_var(
 			$this->wpdb->prepare(
-				"SELECT COUNT(*) FROM {$this->table} WHERE owner_key = %s AND status <> 'ordered' AND expires_at > %s",
+				"SELECT COUNT(*) FROM {$this->table} WHERE owner_key = %s AND status IN ( 'draft', 'active' ) AND expires_at > %s AND updated_at > %s",
 				Session_Identity::owner_hash(),
-				gmdate( 'Y-m-d H:i:s' )
+				gmdate( 'Y-m-d H:i:s' ),
+				gmdate( 'Y-m-d H:i:s', time() - self::DRAFT_TTL )
 			)
 		);
 	}
@@ -193,7 +265,7 @@ final class Repository {
 	}
 
 	/**
-	 * Check whether the fixed seven-day expiration has passed.
+	 * Check whether the session retention window has passed.
 	 *
 	 * @param array $session Session record.
 	 * @return bool
@@ -202,7 +274,16 @@ final class Repository {
 		if ( 'ordered' === $session['status'] || empty( $session['expires_at'] ) ) {
 			return false;
 		}
+		if ( 'cart' !== $session['status'] && ! empty( $session['updated_at'] ) && (int) strtotime( $session['updated_at'] . ' UTC' ) <= time() - self::DRAFT_TTL ) {
+			return true;
+		}
 		return $this->expiration_timestamp( $session ) <= time();
+	}
+
+	/** @param int $seconds Seconds from now. @return string */
+	public function expiration_after( $seconds ) {
+		$seconds = max( 60, min( self::CART_TTL, absint( $seconds ) ) );
+		return gmdate( 'Y-m-d H:i:s', time() + $seconds );
 	}
 
 	/** @param array $session Session record. @return int */
@@ -230,6 +311,28 @@ final class Repository {
 	/** @param string $token Session token. @param string $proof Signed proof. @return bool */
 	public function verify_cart_proof( $token, $proof ) {
 		return is_string( $proof ) && 64 === strlen( $proof ) && hash_equals( $this->cart_proof( $token ), $proof );
+	}
+
+	/**
+	 * Check whether a payload contains customer-created data or files.
+	 *
+	 * @param array $payload Session payload.
+	 * @return bool
+	 */
+	private function payload_has_customer_data( array $payload ) {
+		foreach ( array( 'uploads', 'previews', 'production_files' ) as $collection ) {
+			if ( ! empty( $payload[ $collection ] ) && is_array( $payload[ $collection ] ) ) {
+				return true;
+			}
+		}
+
+		$design = isset( $payload['design'] ) && is_array( $payload['design'] ) ? $payload['design'] : array();
+		foreach ( isset( $design['surfaces'] ) && is_array( $design['surfaces'] ) ? $design['surfaces'] : array() as $surface ) {
+			if ( ! empty( $surface['objects'] ) && is_array( $surface['objects'] ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

@@ -6,7 +6,7 @@ No uses el ZIP automatico de GitHub (`Code > Download ZIP`) para instalar en Wor
 
 Para instalar o actualizar desde WordPress usa este archivo del repositorio:
 
-`flexible-product-customizer-1.6.4-wordpress.zip`
+`flexible-product-customizer-1.6.5-wordpress.zip`
 
 Ese ZIP contiene la carpeta exacta:
 
@@ -15,7 +15,7 @@ Ese ZIP contiene la carpeta exacta:
 Flujo recomendado:
 
 1. En WordPress ve a `Plugins > Añadir plugin > Subir plugin`.
-2. Sube `flexible-product-customizer-1.6.4-wordpress.zip`.
+2. Sube `flexible-product-customizer-1.6.5-wordpress.zip`.
 3. Cuando WordPress pregunte, reemplaza la version instalada.
 4. Activa el plugin si no queda activo automaticamente.
 

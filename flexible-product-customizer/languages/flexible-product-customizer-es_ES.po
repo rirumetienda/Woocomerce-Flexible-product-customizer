@@ -1,8 +1,8 @@
 msgid ""
-msgstr "Project-Id-Version: Flexible Product Customizer 1.6.4\\nLanguage: es_ES\\nMIME-Version: 1.0\\nContent-Type: text/plain; charset=UTF-8\\nContent-Transfer-Encoding: 8bit\\nPlural-Forms: nplurals=2; plural=(n != 1);\\n"
+msgstr "Project-Id-Version: Flexible Product Customizer 1.6.5\\nLanguage: es_ES\\nMIME-Version: 1.0\\nContent-Type: text/plain; charset=UTF-8\\nContent-Transfer-Encoding: 8bit\\nPlural-Forms: nplurals=2; plural=(n != 1);\\n"
 
-msgid "<p>When customers customize a product, the store temporarily saves uploaded images, entered text, generated previews, product identifiers, and an anonymous browser ownership token. Unordered customization data expires seven days after creation. When an order is created, these files and design data are retained with the order according to the store retention policy.</p>"
-msgstr "<p>Cuando los clientes personalizan un producto, la tienda guarda temporalmente las imágenes subidas, el texto introducido, las vistas previas generadas, los identificadores del producto y un token anónimo de propiedad del navegador. Los datos de personalizaciones sin pedido caducan siete días después de su creación. Cuando se crea un pedido, estos archivos y los datos del diseño se conservan con el pedido según la política de retención de la tienda.</p>"
+msgid "<p>When customers customize a product, the store temporarily saves uploaded images, entered text, generated previews, product identifiers, and an anonymous browser ownership token. Draft customization data that is not added to the cart expires after one hour of inactivity. Once added to the cart, unordered customization data expires seven days later. When an order is created, these files and design data are retained with the order according to the store retention policy.</p>"
+msgstr "<p>Cuando los clientes personalizan un producto, la tienda guarda temporalmente las imágenes subidas, el texto introducido, las vistas previas generadas, los identificadores del producto y un token anónimo de propiedad del navegador. Los borradores que no se agregan al carrito caducan después de una hora de inactividad. Una vez agregados al carrito, los datos de personalizaciones sin pedido caducan siete días después. Cuando se crea un pedido, estos archivos y los datos del diseño se conservan con el pedido según la política de retención de la tienda.</p>"
 
 msgid "A design image is no longer available."
 msgstr "Una imagen del diseño ya no está disponible."
@@ -30,6 +30,9 @@ msgstr "Añadir superficie"
 
 msgid "Add text"
 msgstr "Añadir texto"
+
+msgid "Add this customization to the cart before starting another one."
+msgstr "Añade esta personalización al carrito antes de iniciar otra."
 
 msgid "Align bottom"
 msgstr "Alinear abajo"
@@ -138,6 +141,9 @@ msgstr "Cerrar"
 
 msgid "Close editor"
 msgstr "Cerrar editor"
+
+msgid "Close the other open customization editor on this device before continuing."
+msgstr "Cierra el otro editor de personalización abierto en este dispositivo antes de continuar."
 
 msgid "Color"
 msgstr "Color"

@@ -69,7 +69,7 @@ final class Cart_Integration {
 		if ( $session && ! is_wp_error( $session ) ) {
 			$cart_item_data['fpcw_token'] = $token;
 			$cart_item_data['fpcw_surface_surcharge'] = $this->products->surface_surcharge( $session );
-			$this->repository->update( $token, array( 'status' => 'cart' ) );
+			$this->repository->update( $token, array( 'status' => 'cart', 'expires_at' => $this->repository->expiration_after( Repository::CART_TTL ) ) );
 		}
 		return $cart_item_data;
 	}
@@ -96,7 +96,7 @@ final class Cart_Integration {
 		}
 		$data['cart_item_data']['fpcw_token'] = $token;
 		$data['cart_item_data']['fpcw_surface_surcharge'] = $this->products->surface_surcharge( $valid );
-		$this->repository->update( $token, array( 'status' => 'cart' ) );
+		$this->repository->update( $token, array( 'status' => 'cart', 'expires_at' => $this->repository->expiration_after( Repository::CART_TTL ) ) );
 		return $data;
 	}
 
@@ -106,7 +106,7 @@ final class Cart_Integration {
 		if ( $item && ! empty( $item['fpcw_token'] ) ) {
 			$session = $this->repository->find( $item['fpcw_token'] );
 			if ( $session && 'cart' === $session['status'] ) {
-				$this->repository->update( $session['token'], array( 'status' => 'active' ) );
+				$this->repository->update( $session['token'], array( 'status' => 'active', 'expires_at' => $this->repository->expiration_after( Repository::DRAFT_TTL ) ) );
 			}
 		}
 	}

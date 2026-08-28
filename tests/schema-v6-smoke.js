@@ -4,6 +4,7 @@ const template = fs.readFileSync('flexible-product-customizer/includes/class-tem
 const product = fs.readFileSync('flexible-product-customizer/includes/class-product-settings.php', 'utf8');
 const validator = fs.readFileSync('flexible-product-customizer/includes/class-validator.php', 'utf8');
 const rest = fs.readFileSync('flexible-product-customizer/includes/class-rest-controller.php', 'utf8');
+const repository = fs.readFileSync('flexible-product-customizer/includes/class-repository.php', 'utf8');
 const cart = fs.readFileSync('flexible-product-customizer/includes/class-cart-integration.php', 'utf8');
 const activator = fs.readFileSync('flexible-product-customizer/includes/class-activator.php', 'utf8');
 const plugin = fs.readFileSync('flexible-product-customizer/includes/class-plugin.php', 'utf8');
@@ -20,6 +21,13 @@ const threeLicense = 'flexible-product-customizer/licenses/three-LICENSE.txt';
 
 const requirements = [
 	[/['"]schema_version['"]\s*=>\s*6/, template, 'Template schema v6 is missing.'],
+	[/const DRAFT_TTL\s*=\s*HOUR_IN_SECONDS/, repository, 'Draft session TTL is not centralized at one hour.'],
+	[/const CART_TTL\s*=\s*7 \* DAY_IN_SECONDS/, repository, 'Cart session TTL is not centralized at seven days.'],
+	[/find_reusable_empty_draft_for_current_owner/, repository, 'Recent empty drafts are not reused before quota checks.'],
+	[/delete_empty_drafts_for_current_owner/, repository, 'Empty draft cleanup before quota checks is missing.'],
+	[/payload_has_customer_data/, repository, 'Draft cleanup is not protected from deleting customer content.'],
+	[/status <> 'cart'[\s\S]{0,160}updated_at <= %s/, repository, 'Expired non-cart sessions are not found by inactivity.'],
+	[/status IN \( 'draft', 'active' \)[\s\S]{0,160}updated_at > %s/, repository, 'Open-session quota is not limited to recent draft/active sessions.'],
 	[/['"]product_type['"]/, template, 'Flat and cylindrical template types are missing.'],
 	[/['"]print_area['"]/, template, 'Independent cylindrical print map dimensions are missing.'],
 	[/['"]frame['"]\s*=>\s*\$this->sanitize_box/, template, 'The mockup projection frame is not normalized centrally.'],
@@ -31,6 +39,11 @@ const requirements = [
 	[/preview_overlay_image_id/, template, 'Surface top preview layer IDs are not normalized.'],
 	[/preview_overlay_image_url/, editor, 'Surface top preview layer URLs are not rendered by the editor.'],
 	[/function currentPreviewView/, editor, 'The editor does not track active cylindrical preview views.'],
+	[/EDITOR_LOCK_KEY/, editor, 'The customer editor does not enforce a same-device editor lock.'],
+	[/function acquireEditorLock/, editor, 'The customer editor lock acquisition helper is missing.'],
+	[/function releaseEditorLock/, editor, 'The customer editor lock release helper is missing.'],
+	[/editorAlreadyOpen/, frontend, 'The same-device editor lock message is not localized from PHP.'],
+	[/addAnotherUnavailable/, frontend, 'The add-another disabled state message is not localized from PHP.'],
 	[/available_surface_ids/, template, 'Attribute-specific surface availability is not centralized.'],
 	[/['"]image_id['"]/, template, 'Attribute-specific surface images are missing.'],
 	[/function surface_extras/, product, 'Product surface extras are not exposed centrally.'],
@@ -39,6 +52,9 @@ const requirements = [
 	[/fpcw_empty_design/, validator, 'Empty customizations are not rejected by validation.'],
 	[/['"]outline_width['"]/, validator, 'Outline thickness is not validated server-side.'],
 	[/required_surface_ids/, rest, 'REST render validation is not scoped to the selected attribute.'],
+	[/fpcw_open_session_limit/, rest, 'Open-session quota is not filterable.'],
+	[/session_update_values[\s\S]{0,260}Repository::CART_TTL[\s\S]{0,120}Repository::DRAFT_TTL/, rest, 'REST updates do not apply the correct draft/cart retention window.'],
+	[/delete_temporary_session[\s\S]{0,180}fpcw_session_expired/, rest, 'Expired REST sessions do not delete temporary files immediately.'],
 	[/preview_render_key/, rest, 'REST preview validation is not scoped to surface and angle.'],
 	[/fpcw-cart-preview-link/, cart, 'Cart previews are not linked to their full image.'],
 	[/schema_version[\s\S]{0,120}<\s*6/, activator, 'Stored templates do not have an automatic schema v6 migration.'],
